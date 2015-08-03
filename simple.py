@@ -46,7 +46,7 @@ response = DataAccessLayer.getGeometryData(request, None)
 
 # Now set area
 request = DataAccessLayer.newDataRequest()
-request.setEnvelope(response[0].getGeometry())
+request.setEnvelope(response[0].getGeometry().buffer(2))
 
 # Now query grid
 request.setDatatype("grid")
@@ -60,22 +60,17 @@ print data
 # create figure and axes instances
 fig = plt.figure(figsize=(8,8))
 ax = fig.add_axes([0.1,0.1,0.8,0.8])
-# create polar stereographic Basemap instance.
-m = Basemap(projection='merc',llcrnrlat=-80,urcrnrlat=80,\
-    llcrnrlon=-180,urcrnrlon=180,lat_ts=20,resolution='c')
-# draw coastlines, state and country boundaries, edge of map.
-m.drawcoastlines()
-m.drawstates()
-m.drawcountries()
-# draw parallels.
-parallels = np.arange(0.,90,10.)
-m.drawparallels(parallels,labels=[1,0,0,0],fontsize=10)
-# draw meridians
-meridians = np.arange(180.,360.,10.)
-m.drawmeridians(meridians,labels=[0,0,0,1],fontsize=10)
-
 
 lons,lats = data.getLatLonCoords()
+
+lat_min = min(lats[-1])
+lat_max = max(lats[0])
+lon_min = min(lons[0])
+lon_max = max(lons[-1])
+
+wave = 0.75*(np.sin(2.*lats)**8*np.cos(4.*lons))
+mean = 0.5*np.cos(2.*lats)*((np.sin(2.*lats))**2 + 2.)
+
 lat_min = min(lats[-1])
 print lat_min
 lat_max = max(lats[0])
@@ -87,26 +82,43 @@ print lon_max
 
 print lons
 print lats
+print data.getRawData()
 
+# lons2 = [-97.9547, -97.9747, -97.4256]
+# lats2 = [35.5322, 35.864, 35.4111]
+# data2 = [2,2,2]
 
-lons2 = [-97.9547, -97.9747, -97.4256]
-lats2 = [35.5322, 35.864, 35.4111]
-data2 = [2,2,2]
-
-xs, ys = np.meshgrid(lons2, lats2)
+xs, ys = np.meshgrid(lons, lats)
 dataMesh = np.empty_like(xs)
 
 print xs
 print ys
 print dataMesh
-print data.getRawData()
+
+
+print "wave.shape"
+print wave.shape
+print "mean.shape"
+print mean.shape
+
+print "xs.shape"
+print xs.shape
+print "ys.shape"
+print ys.shape
+print "dataMesh.shape"
+print dataMesh.shape
+
 print "lats.shape"
 print lats.shape
 print "lons.shape"
 print lons.shape
-print "data.getRawData() is " + `len(data.getRawData())` + " by " + `len(data.getRawData()[0])`
+print "data.getRawData().shape"
+print data.getRawData().shape
 
-
+print "data.getRawData().shape[0]"
+print data.getRawData().shape[0]
+print "data.getRawData().shape[1]"
+print data.getRawData().shape[1]
 ##
 ## If we want to show all cycles/fcst hours
 ##
