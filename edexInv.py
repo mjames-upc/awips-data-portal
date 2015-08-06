@@ -19,6 +19,7 @@ import random
 import string
 import cherrypy
 from ufpy.dataaccess import DataAccessLayer
+import matplotlib.tri as mtri
 import matplotlib.pyplot as plt
 from matplotlib.transforms import offset_copy
 #import cartopy.crs as ccrs
@@ -26,15 +27,12 @@ from matplotlib.transforms import offset_copy
 from mpl_toolkits.basemap import Basemap, cm
 # requires netcdf4-python (netcdf4-python.googlecode.com)
 #from netCDF4 import Dataset as NetCDFFile
-from osgeo import gdal
 import numpy as np
 from numpy import linspace, transpose
 from numpy import meshgrid
 import matplotlib.pyplot as plt
 
 
-# GDAL does not use python exceptions by default
-gdal.UseExceptions()
 
 class EdexInventory(object):
 
@@ -76,7 +74,7 @@ class EdexInventory(object):
         response = DataAccessLayer.getGeometryData(request, None)
         # Now set area
         request = DataAccessLayer.newDataRequest()
-        request.setEnvelope(response[0].getGeometry().buffer(2))
+        #request.setEnvelope(response[0].getGeometry().buffer(2))
         # Now query grid
         request.setDatatype("grid")
 
@@ -110,12 +108,17 @@ class EdexInventory(object):
         #               llcrnrlon=lon_min,
         #               urcrnrlon=lon_max)
 
-        map = Basemap(
-            projection = 'merc',
-            llcrnrlat=lat_min, urcrnrlat=lat_max,
-            llcrnrlon=lon_min, urcrnrlon=lon_max,
-            rsphere=6371200., resolution='l', area_thresh=10000
-        )
+        #map = Basemap(
+        #    projection = 'merc',
+        #    llcrnrlat=lat_min, urcrnrlat=lat_max,
+        #    llcrnrlon=lon_min, urcrnrlon=lon_max,
+        #    rsphere=6371200., resolution='l', area_thresh=10000
+        #)
+	map = Basemap(projection='cyl',
+          resolution = 'c',
+          llcrnrlon = lons.min(), llcrnrlat = lats.min(),
+          urcrnrlon =lons.max(), urcrnrlat = lats.max()
+	)
         map.drawcoastlines()
         map.drawstates()
         map.drawcountries()
@@ -126,7 +129,20 @@ class EdexInventory(object):
 
         #map = Basemap(projection='npstere',boundinglat=40,lon_0=-100,resolution='l')
 
-        cs = map.pcolormesh(lons,lats, data.getRawData(), shading='flat', latlon=True, vmin=0, vmax=100)
+        #cs = map.pcolormesh(lons,lats, data.getRawData(), shading='flat', latlon=True, vmin=0, vmax=100)
+       
+	ngrid = len(x)
+        rlons = np.repeat(np.linspace(np.min(lons), np.max(lons), ngrid),
+                  ngrid).reshape(ngrid, ngrid)
+        rlats = np.repeat(np.linspace(np.min(lats), np.max(lats), ngrid),
+                  ngrid).reshape(ngrid, ngrid).T
+        tli = mtri.LinearTriInterpolator(mtri.Triangulation(lons.flatten(), lats.flatten()),
+		data.getRawData().flatten())
+        rdata = tli(rlons, rlats)
+        cs = map.pcolormesh(rlons, rlats, rdata, latlon=True, vmin=0, vmax=100)
+        clevs = [0,10,20,30,40,50,60,70,80,90,100]
+        #cs = map.contourf(rlons,rlats, rdata,clevs)
+
 
         # yy,xx = meshgrid(x,y)
         # #yy2,xx2 = meshgrid(y,x)
@@ -314,147 +330,6 @@ class EdexInventory(object):
     </html>""" % (sio.getvalue().encode("base64").strip(), varString)
 
     @cherrypy.expose
-    def gdal(self, name=""):
-        # fig = plt.figure(figsize=(8,8))
-        # ax = fig.add_axes([0.1,0.1,0.8,0.8])
-        # #lons,lats = data.getLatLonCoords()
-        # map = Basemap(projection='tmerc',
-        #               lat_0=0, lon_0=3,
-        #               llcrnrlon=-122.6274167,
-        #               llcrnrlat=37.4963278,
-        #               urcrnrlon=-122.1195667,
-        #               urcrnrlat=47.9973833)
-        # map.drawcoastlines()
-        # map.drawstates()
-        # map.drawcountries()
-        #
-        # ds = gdal.Open("land.tif")
-        #ds = gdal.Open("manhattan.tif")
-        # data = ds.ReadAsArray()
-        # x = linspace(0, map.urcrnrx, data.shape[1])
-        # y = linspace(0, map.urcrnry, data.shape[0])
-        # xx, yy = meshgrid(x, y)
-        # map.contourf(xx, yy, data)
-        #
-        # data = ds.ReadAsArray()
-        #
-        # x = linspace(0, map.urcrnrx, data.shape[1])
-        # y = linspace(0, map.urcrnry, data.shape[0])
-        #
-        # xx, yy = meshgrid(x, y)
-        #
-        # cs = map.contour(xx, yy, data, range(400, 1500, 100), cmap = plt.cm.cubehelix)
-        # plt.clabel(cs, inline=True, fmt='%1.0f', fontsize=12, colors='k')
-
-        DataAccessLayer.changeEDEXHost("edex.unidata.ucar.edu")
-        gridTimeIndex = -1
-
-        # EDEX Data Access Framework
-        request = DataAccessLayer.newDataRequest()
-        request.setDatatype("maps")
-        request.setParameters("cwa","wfo")
-        request.addIdentifier("locationField","wfo")
-        request.addIdentifier("geomField","the_geom")
-        request.addIdentifier("table","mapdata.cwa")
-        request.setLocationNames("BOU")
-        response = DataAccessLayer.getGeometryData(request, None)
-
-        # Now set area
-        request = DataAccessLayer.newDataRequest()
-        request.setEnvelope(response[0].getGeometry().buffer(3))
-        envelope = request.getEnvelope()
-        # Now query grid
-        request.setDatatype("grid")
-        request.setLocationNames("NAM-40km")
-        request.setParameters("RH")
-        request.setLevels("500MB")
-        t = DataAccessLayer.getAvailableTimes(request)
-
-        response = DataAccessLayer.getGridData(request, [t[gridTimeIndex]])
-        data = response[0]
-
-        fig = plt.figure(figsize=(8,8))
-        ax = fig.add_axes([0.1,0.1,0.8,0.8])
-
-        lons,lats = data.getLatLonCoords()
-        lat_min = lats.min()
-        lat_max = lats.max()
-        lon_min = lons.min()
-        lon_max = lons.max()
-
-        width = lats.shape[1]
-        height = lats.shape[0]
-        lllon, lllat, urlon, urlat = -144.99499512, -59.95500183, -65.03500366, 60.00500107
-        lllon, lllat, urlon, urlat = lon_min, lat_min, lon_max, lat_max
-
-        dlon = (urlon-lllon) / width
-        dLat = (urlat-lllat) / height
-        baseArray = np.fromfunction(lambda y,x: (100.0 / (width + height)) * (y+x), (height, width), dtype = float)
-        lons2 = np.arange(lllon, urlon, dlon)
-        lats2 = np.arange(lllat, urlat, dLat)
-        lons3, lats3 = np.meshgrid(lons2, lats2)
-
-        fig = plt.figure()
-        plt.title("The Plot")
-        m = Basemap(projection='cyl',
-                  resolution = 'c',
-                  llcrnrlon = lllon, llcrnrlat = lllat,
-                  urcrnrlon =urlon, urcrnrlat = urlat
-        )
-        # # Lambert Conformal Conic map.
-        # m = Basemap(llcrnrlon=-133.4590,llcrnrlat=12.1900,urcrnrlon=-49.3860,urcrnrlat=57.2893,
-        #     projection='lcc',lat_1=25.,lat_2=25.,lon_0=-95.,
-        #     resolution ='l',area_thresh=1000.)
-        m.drawcoastlines()
-        m.drawstates()
-        m.drawcountries()
-
-        cs = m.pcolormesh( lons, lats, data.getRawData(), shading='flat', latlon=True, vmin=0, vmax=100)
-
-        for i in range(len(lats)):
-            for j in range(len(lats[i])):
-                x,y = m(lons[i][j], lats[i][j])
-                m.plot(x, y, 'bo', markersize=2, label=i)
-
-        #cs = m.pcolormesh(lons, lats,baseArray, shading='flat', latlon=True, vmin=0, vmax=100)
-
-        #cs = m.contourf(x,y, data.getRawData())
-
-        cbar = m.colorbar(cs,location='bottom',pad="5%")
-        cbar.set_label(data.getUnit())
-        plt.title(data.getParameter())
-        varString = ''
-        varString +=  "lats.shape (" + ','.join([str(x) for x in lats.shape]) + ")<br>"
-        varString +=  "lons.shape (" + ','.join([str(x) for x in lons.shape]) + ")<br>"
-        varString +=  "lats2.shape (" + ','.join([str(x) for x in lats2.shape]) + ")<br>"
-        varString +=  "lons2.shape (" + ','.join([str(x) for x in lons2.shape]) + ")<br>"
-        varString +=  "lats3.shape (" + ','.join([str(x) for x in lats3.shape]) + ")<br>"
-        varString +=  "lons3.shape (" + ','.join([str(x) for x in lons3.shape]) + ")<br>"
-        varString +=  "data.getRawData().shape (" + ','.join([str(x) for x in data.getRawData().shape]) + ")<br>"
-        varString +=  "data.getRawData() => " + ','.join(str(item) for innerlist in data.getRawData() for item in innerlist) + ")<br>"
-        varString +=  "baseArray.shape (" + ','.join([str(x) for x in baseArray.shape]) + ")<br>"
-        varString +=  "baseArray => " + ','.join(str(item) for innerlist in baseArray for item in innerlist)
-
-        gridSelect = "<pre>%s,%s</pre>" % (t[gridTimeIndex].getRefTime(),t[gridTimeIndex].getValidPeriod())
-
-        format = "png"
-        sio = cStringIO.StringIO()
-        plt.savefig(sio, format=format)
-        print "Content-Type: image/%s\n" % format
-        sys.stdout.write(sio.getvalue())
-        plt.title('contour lines over filled continent background')
-        return """<html><head><link href="/static/css/style.css" rel="stylesheet"></head>
-    <body>
-    <h1>""" + name + """ forecast cycles avialable</h1>
-    %s<br>
-    <table width="" border="1">
-    <img src="data:image/png;base64,%s"/><br>
-    %s<br>
-    </table>
-    </body>
-    </html>""" % (gridSelect, sio.getvalue().encode("base64").strip(), varString)
-
-    @cherrypy.expose
     def static(self):
         fig = plt.figure(figsize=(8,8))
         ax = fig.add_axes([0.1,0.1,0.8,0.8])
@@ -509,7 +384,16 @@ class EdexInventory(object):
         m.drawcoastlines()
         m.drawstates()
         m.drawcountries()
-        cs = m.pcolormesh( lons, lats, data, shading='flat', latlon=True, vmin=0, vmax=100)
+        #cs = m.pcolormesh( lons, lats, data, shading='flat', latlon=True, vmin=0, vmax=100)
+	ngrid = 50
+	rlons = np.repeat(np.linspace(np.min(lons), np.max(lons), ngrid),
+                  ngrid).reshape(ngrid, ngrid)
+	rlats = np.repeat(np.linspace(np.min(lats), np.max(lats), ngrid),
+                  ngrid).reshape(ngrid, ngrid).T
+	tli = mtri.LinearTriInterpolator(mtri.Triangulation(lons.flatten(), lats.flatten()),
+                                 data.flatten())
+	rdata = tli(rlons, rlats)
+	cs = m.pcolormesh(rlons, rlats, rdata, latlon=True, vmin=0, vmax=100)
         #plt.draw()
         for i in range(len(lats)):
                     for j in range(len(lats[i])):
