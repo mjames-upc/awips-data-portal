@@ -1,19 +1,3 @@
-##
-## Flask hello world
-##
-
-#from flask import Flask
-#app = Flask(__name__)
-#@app.route("/")
-#def hello():
-#    return "Hello World!"
-#
-#if __name__ == "__main__":
-#    app.run(debug=True)
-
-##
-## cherrypy
-##
 import sys, cStringIO, os, os.path, datetime
 import random
 import string
@@ -30,7 +14,6 @@ import numpy as np
 from numpy import linspace
 from numpy import meshgrid
 import matplotlib.pyplot as plt
-
 
 DataAccessLayer.changeEDEXHost("edex.unidata.ucar.edu")
 gridTimeIndex = -1
@@ -51,11 +34,12 @@ request.setEnvelope(response[0].getGeometry())
 
 # Now query grid
 request.setDatatype("grid")
-request.setLocationNames("NAM-40km")
-request.setParameters("RH")
+request.setLocationNames("HRRR")
+request.setParameters("T")
 request.setLevels("500MB")
 t = DataAccessLayer.getAvailableTimes(request)
-
+print t
+exit()
 response = DataAccessLayer.getGridData(request, [t[gridTimeIndex]])
 data = response[0]
 

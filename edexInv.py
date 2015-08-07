@@ -1,19 +1,3 @@
-##
-## Flask hello world
-## 
-
-#from flask import Flask
-#app = Flask(__name__)
-#@app.route("/")
-#def hello():
-#    return "Hello World!"
-#
-#if __name__ == "__main__":
-#    app.run(debug=True)
-
-##
-## cherrypy
-##
 import sys, cStringIO, os, os.path, datetime
 import random
 import string
@@ -31,8 +15,7 @@ import numpy as np
 from numpy import linspace, transpose
 from numpy import meshgrid
 import matplotlib.pyplot as plt
-
-
+from pint import UnitRegistry
 
 class EdexInventory(object):
 
@@ -41,7 +24,7 @@ class EdexInventory(object):
     def index(self):
         request = DataAccessLayer.newDataRequest()
         request.setDatatype("grid")
-        available_grids = DataAccessLayer.getAvailableLocationNames(request)
+        available_grids = DataAccessLayer.getAvailableLocationNames(request).sort()
         gridTableString=''
         for grid in available_grids:
             gridTableString += "<tr><td><a href='grid?name="+ grid +"'>" + grid + "</a></td></tr>"
@@ -60,8 +43,7 @@ class EdexInventory(object):
         # We will use this to create the envelope for our grid request.
         # this is to reduce bandwidth while testing
 
-
-        gridTimeIndex = -1
+        gridTimeIndex = 0
 
         # EDEX Data Access Framework
         request = DataAccessLayer.newDataRequest()
@@ -71,7 +53,7 @@ class EdexInventory(object):
         request.addIdentifier("geomField","the_geom")
         request.addIdentifier("table","mapdata.states")
         request.setLocationNames("Colorado")
-        response = DataAccessLayer.getGeometryData(request, None)
+        #response = DataAccessLayer.getGeometryData(request, None)
         # Now set area
         request = DataAccessLayer.newDataRequest()
         #request.setEnvelope(response[0].getGeometry().buffer(2))
@@ -86,63 +68,41 @@ class EdexInventory(object):
         gridSelect += '</select>'
 
         request.setLocationNames(name)
-        request.setParameters("RH")
-        request.setLevels("500MB")
+        request.setParameters("T")
+        #request.setLevels("1000MB")
         t = DataAccessLayer.getAvailableTimes(request)
         response = DataAccessLayer.getGridData(request, [t[gridTimeIndex]])
         data = response[0]
         lons,lats = data.getLatLonCoords()
         # DAF END
 
-        fig = plt.figure(figsize=(8,8))
-        ax = fig.add_axes([0.1,0.1,0.8,0.8])
-        lat_min = min(lats[-1])
-        lat_max = max(lats[0])
-        lon_min = min(lons[0])
-        lon_max = max(lons[-1])
-
-        # map = Basemap(projection='tmerc',
-        #               lat_0=0, lon_0=3,
-        #               llcrnrlat=lat_min,
-        #               urcrnrlat=lat_max,
-        #               llcrnrlon=lon_min,
-        #               urcrnrlon=lon_max)
-
-        #map = Basemap(
-        #    projection = 'merc',
-        #    llcrnrlat=lat_min, urcrnrlat=lat_max,
-        #    llcrnrlon=lon_min, urcrnrlon=lon_max,
-        #    rsphere=6371200., resolution='l', area_thresh=10000
-        #)
-	map = Basemap(projection='cyl',
-          resolution = 'c',
-          llcrnrlon = lons.min(), llcrnrlat = lats.min(),
-          urcrnrlon =lons.max(), urcrnrlat = lats.max()
-	)
+        map = Basemap(projection='cyl',
+              resolution = 'c',
+              llcrnrlon = lons.min(), llcrnrlat = lats.min(),
+              urcrnrlon =lons.max(), urcrnrlat = lats.max()
+        )
         map.drawcoastlines()
         map.drawstates()
         map.drawcountries()
         x = linspace(0, map.urcrnrx, data.getRawData().shape[1])
         y = linspace(0, map.urcrnry, data.getRawData().shape[0])
         xx, yy = meshgrid(x, y)
+
         #cs = map.pcolormesh(xx, yy, data.getRawData())
-
         #map = Basemap(projection='npstere',boundinglat=40,lon_0=-100,resolution='l')
-
         #cs = map.pcolormesh(lons,lats, data.getRawData(), shading='flat', latlon=True, vmin=0, vmax=100)
-       
-	ngrid = len(x)
+
+        ngrid = len(x)
         rlons = np.repeat(np.linspace(np.min(lons), np.max(lons), ngrid),
                   ngrid).reshape(ngrid, ngrid)
         rlats = np.repeat(np.linspace(np.min(lats), np.max(lats), ngrid),
                   ngrid).reshape(ngrid, ngrid).T
-        tli = mtri.LinearTriInterpolator(mtri.Triangulation(lons.flatten(), lats.flatten()),
-		data.getRawData().flatten())
+        tli = mtri.LinearTriInterpolator(mtri.Triangulation(lons.flatten(),
+                  lats.flatten()), data.getRawData().flatten())
         rdata = tli(rlons, rlats)
-        cs = map.pcolormesh(rlons, rlats, rdata, latlon=True, vmin=0, vmax=100)
-        clevs = [0,10,20,30,40,50,60,70,80,90,100]
+        clevs = [40,45,50,55,60,65,70,75,80,85,90,95,100,105,110]
+        cs = map.pcolormesh(rlons, rlats, (rdata-273.15)*1.8 + 32, latlon=True)
         #cs = map.contourf(rlons,rlats, rdata,clevs)
-
 
         # yy,xx = meshgrid(x,y)
         # #yy2,xx2 = meshgrid(y,x)
@@ -150,13 +110,9 @@ class EdexInventory(object):
         # # compute native map projection coordinates of lat/lon grid.
         # #lons2, lats2 = map(lons2*180./np.pi, lats2*180./np.pi)
         # clevs = [0,10,20,30,40,50,60,70,80,90,100]
-        #
         # tmpRaw = transpose(data.getRawData())
-        #
         # cs = map.contourf(lons,lats, data.getRawData(),clevs)
-
-        #cs = map.contourf(xx2,yy2, tmpRaw,clevs)
-
+        # cs = map.contourf(xx2,yy2, tmpRaw,clevs)
 
         varString =  "len(response) = %s<br>" % ( len(response) )
         varString +=  "x.shape (" + ','.join([str(x) for x in x.shape]) + ")<br>"
@@ -170,12 +126,10 @@ class EdexInventory(object):
         varString +=  "data.getRawData().shape (" + ','.join([str(x) for x in data.getRawData().shape]) + ")<br>"
         #varString +=  "tmpRaw.shape (" + ','.join([str(x) for x in tmpRaw.shape]) + ")<br>"
 
-        #
-        #
-        # # add colorbar.
+        # add colorbar.
         cbar = map.colorbar(cs,location='bottom',pad="5%")
-        cbar.set_label(data.getUnit())
-        plt.title(data.getParameter())
+        #cbar.set_label(data.getParameter() + "(" + data.getUnit() + ")")
+        cbar.set_label(data.getParameter() + "(F)")
         #plt.show()
         # save or show
         #plt.show()
