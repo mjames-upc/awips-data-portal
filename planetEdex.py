@@ -31,7 +31,7 @@ class Edex:
         request.setLevels(level)
 
         # Build dropdowns
-        gridString = ''
+        parmString = '<table class="ui single line table"><thead><tr><th>Parameter</th><th>Description</th><th>Unit</th></tr></thead>'
         lvlString = ''
         gridSelect = '<div class=""><select class="ui select dropdown" id="gridSelect">'
         for grid in available_grids:
@@ -39,9 +39,18 @@ class Edex:
         gridSelect += '</select></div>'
         gridSelect += '<div class=""><select class="ui select dropdown" id="parmSelect">'
         for gridparm in availableParms:
+            for item in parm_dict:
+                if item == gridparm:
+                    parmDescriptioon = parm_dict[item][0]
+                    parmUnit = parm_dict[item][1]
             gridSelect += '<option value="%s">%s</option>' % (gridparm, gridparm)
-            gridString += '<a href="/parm?parm='+ gridparm +'">' + gridparm + '</a> &nbsp;|&nbsp; '
+            parmString += '<tr><td><a href="/parm?parm='+ gridparm +'"><b>' + gridparm + '</b></a></td><td>' + parmDescriptioon + '</td><td><div class="small ui label">' + parmUnit + '</div></td></tr>'
         gridSelect += '</select></div>'
+
+        parmString += '</table>'
+
+
+
 
         parmDescriptioon = ''
         parmUnit = ''
@@ -114,7 +123,7 @@ class Edex:
                   + '<h3 class="first">Details</h3>' \
                   + '<p>Grid size: ' + str(data.shape) + '</p>' \
                   + '<h3 class="first">Selected Parameter</h3><p>' + parm + ' - ' + parmDescriptioon + ' (' + parmUnit + ')</p>' \
-                  + '<h3 class="first">Grid Parameters</h3><p><small>' + gridString + '</small></p>' \
+                  + '<h3 class="first">Grid Parameters</h3><p>' + parmString + '</p>' \
                   + '<h3 class="first">Grid Levels</h3><p><small>' + lvlString + '</small></p>' \
                   + '<p>Unit: ' + grid.getUnit() + '</p>' \
                   + '<p>Time: ' + str(fcstRun[0])  + '</p>'
@@ -137,21 +146,26 @@ class Edex:
         # Grid names
         available_grids = DataAccessLayer.getAvailableLocationNames(request)
         available_grids.sort()
-        
+
+        gridString = ''
         for grid in available_grids:
+
+            gridString += '<h3><a href="/?name='+grid+'">'+grid+'</a></h3><table class="ui single line table"><thead><tr><th>Parameter</th><th>Description</th><th>Unit</th><th>Level</th><th>API</th></tr></thead>'
             request.setLocationNames(grid)
-            # Grid levels
             availableLevels = DataAccessLayer.getAvailableLevels(request)
             availableLevels.sort()
-
+            for level in availableLevels:
+                gridString += '<tr><td><a href="/?name=' + grid + '&parm=' + parm + '">' + parm + '</a></td>' \
+                        '<td> ' + parmDescriptioon + '</td>' \
+                        '<td>'+ parmUnit +'</td>' \
+                        '<td><div class="small ui label">' + str(level) + '</div></td><td><a class="circular ui icon basic button" href="#"><i class="code icon small"></i></a></td></tr>'
+            gridString += '</table>'
 
         # Build dropdowns
-        gridString = ''
         lvlString = ''
         gridSelect = '<div class=""><select class="ui select dropdown" id="gridSelect">'
         for grid in available_grids:
             gridSelect += '<option value="%s">%s</option>' % (grid, grid)
-            gridString += '<a href="/?name=' + grid + '&parm=' + parm + '">' + grid + '</a> &nbsp;|&nbsp; '
         gridSelect += '</select></div>'
 
         gridSelect += '<div class=""><select class="ui select dropdown" id="levelSelect">'
@@ -172,8 +186,7 @@ class Edex:
             gridSelect += '<option value="%s">%s</option>' % (time, time)
         gridSelect += '</select></div><br><Br>'
         gridSelect += '<h1 class="ui dividing header">' + parm + ' - ' + parmDescriptioon + ' (' + parmUnit + ')</h1>' \
-                  + '<h3 class="first">Available Grids</h3><p>' + gridString + '</p>' \
-                  + '<h3 class="first">Grid Levels</h3><p><small>' + lvlString + '</small></p>'
+                  + '<p>' + gridString + '</p>'
         stringReturn = createpage(name,parm,level,"",gridSelect)
         return stringReturn
     
