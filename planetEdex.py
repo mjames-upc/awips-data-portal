@@ -1,5 +1,7 @@
 import sys, os, cStringIO
-
+import psycopg2
+import json
+import geojson
 import cherrypy
 from awips.dataaccess import DataAccessLayer
 import matplotlib.tri as mtri
@@ -7,11 +9,150 @@ import matplotlib.pyplot as plt
 import matplotlib
 import cartopy.crs as ccrs
 import numpy as np
+import re
 from parms import parm_dict
+import binascii, struct
+
 
 class Edex:
+
+    def hash(s):
+        return binascii.b2a_base64(struct.pack('i', hash(s)))
+
     @cherrypy.expose
-    def index(self, name="RAP40", parm="", level=""):
+    def json(self, name="", parm="", level="",time=""):
+
+        request = DataAccessLayer.newDataRequest()
+        request.setDatatype("grid")
+        if name != "": request.setLocationNames(name)
+        if parm != "": request.setParameters(parm)
+        if level != "": request.setLevels(level)
+        cycles = DataAccessLayer.getAvailableTimes(request, True)
+        t = DataAccessLayer.getAvailableTimes(request)
+        fcstRun = []
+        #for time in t:
+        #    if str(time)[:19] == str(cycles[-1]):
+        #        fcstRun.append(time)
+        fcstRun.append(t[0])
+        response = DataAccessLayer.getGridData(request, fcstRun)
+        grid = response[0]
+        data = grid.getRawData()
+        lons, lats = grid.getLatLonCoords()
+
+
+
+
+        columns = (
+            'dtype', 'id', 'crs', 'dx', 'dy', 'firstgridpointcorner', 'the_geom',
+            'la1', 'lo1', 'name', 'nx', 'ny', 'spacingunit', 'latin1', 'latin2', 'lov',
+            'majoraxis', 'minoraxis', 'la2', 'latin', 'lo2', 'lad'
+        )
+
+        return json.dumps(data, indent=2)
+
+
+        #coverage = ''
+        #results = []
+        #for row in cur.fetchall():
+        #    results.append(dict(zip(columns, row)))
+        #coverage += json.dumps(results, indent=2)
+
+    @cherrypy.expose
+    def index(self):
+
+        pattern = re.compile("^((ECMF|UKMET|QPE|MPE|FFG|GribModel|HFR))")
+
+        request = DataAccessLayer.newDataRequest()
+        request.setDatatype("grid")
+        # Grid names
+        available_grids = DataAccessLayer.getAvailableLocationNames(request)
+        available_grids.sort()
+        # Grid parameters
+        availableParms = DataAccessLayer.getAvailableParameters(request)
+        availableParms.sort()
+
+        # Build dropdowns
+        lvlString = ''
+        gridSelect = """
+        <div class="ui search">
+          <div class="ui icon input">
+            <input class="prompt" type="text" placeholder="Search parameters...">
+            <i class="search icon"></i>
+          </div>
+          <div class="results"></div>
+        </div>
+        """
+        gridSelect += '<div class=""><select class="ui select dropdown" id="gridSelect">'
+        gridCards = '<div class="ui link cards">'
+
+        for grid in available_grids:
+            if not pattern.match(grid):
+                gridSelect += '<option value="%s">%s</option>' % (grid, grid)
+                gridCards += """<div class="card">
+                                    <div class="image"></div>
+                                    <div class="content">
+                                        <div class="header"><a href="/grid?name=%s">%s</a></div>
+                                        <div class="meta">Meta</div>
+                                        <div class="description">Description</div>
+                                    </div>
+                                    <div class="extra content">
+                                      <span class="right floated">
+                                        Len by Width
+                                      </span>
+                                      <span>
+                                        <i class="user icon"></i>
+                                        75 parameters
+                                      </span>
+                                    </div>
+                                </div>""" % (grid, grid)
+        gridSelect += '</select></div>'
+        gridSelect += '<div class=""><select class="ui select dropdown" id="parmSelect">'
+        parameter_content = 'var parameter_content = ['
+        for gridparm in availableParms:
+            for item in parm_dict:
+                if item == gridparm:
+                    parmDescription = parm_dict[item][0]
+                    parmUnit = parm_dict[item][1]
+            parameter_content += "{ title: '"+gridparm+" - "+parmDescription+"'},"
+            gridSelect += '<option value="%s">%s - %s</option>' % (gridparm, gridparm, parmDescription)
+        gridSelect += '</select></div>'
+        gridCards += '</div>'
+        parameter_content += '];'
+
+        stringReturn = createpage("", "", "", "", gridSelect + gridCards,parameter_content)
+        return stringReturn
+
+
+    @cherrypy.expose
+    def grid(self, name="RAP40", parm="", level=""):
+
+        conn = None
+        try:
+            conn = psycopg2.connect("dbname = 'metadata' user = 'awips' host = 'localhost' password='awips'")
+        except psycopg2.DatabaseError, ex:
+            print 'I am unable to connect the database: ' + str(ex)
+            sys.exit(1)
+
+        cur = conn.cursor()
+        cur.execute("select * from gridcoverage where id = "
+                    "(select distinct location_id from grid_info where datasetid = '"+name+"');")
+        columns = (
+        'dtype', 'id', 'crs', 'dx', 'dy', 'firstgridpointcorner', 'the_geom',
+        'la1','lo1','name','nx','ny','spacingunit','latin1','latin2','lov',
+        'majoraxis','minoraxis','la2','latin','lo2', 'lad'
+        )
+        coverage = '<h1>Hey look, we can query postgres and dump to json...</h1>'
+        results = []
+        for row in cur.fetchall():
+            results.append(dict(zip(columns, row)))
+        coverage += json.dumps(results, indent=2)
+        #coverage = ''
+        #for res in results:
+        #    coverage =+ res
+
+
+        pattern = re.compile("^((ECMF|UKMET|QPE|MPE|FFG|GribModel))")
+
         request = DataAccessLayer.newDataRequest()
         request.setDatatype("grid")
         # Grid names
@@ -35,16 +176,19 @@ class Edex:
         lvlString = ''
         gridSelect = '<div class=""><select class="ui select dropdown" id="gridSelect">'
         for grid in available_grids:
-            gridSelect += '<option value="%s">%s</option>' % (grid, grid)
+            if not pattern.match(grid): gridSelect += '<option value="%s">%s</option>' % (grid, grid)
         gridSelect += '</select></div>'
         gridSelect += '<div class=""><select class="ui select dropdown" id="parmSelect">'
+
         for gridparm in availableParms:
+            parmDescription = ''
+            parmUnit = ''
             for item in parm_dict:
                 if item == gridparm:
-                    parmDescriptioon = parm_dict[item][0]
+                    parmDescription = parm_dict[item][0]
                     parmUnit = parm_dict[item][1]
-            gridSelect += '<option value="%s">%s</option>' % (gridparm, gridparm)
-            parmString += '<tr><td><a href="/parm?parm='+ gridparm +'"><b>' + gridparm + '</b></a></td><td>' + parmDescriptioon + '</td><td><div class="small ui label">' + parmUnit + '</div></td></tr>'
+            gridSelect += '<option value="%s">%s - %s</option>' % (gridparm, gridparm, parmDescription)
+            parmString += '<tr><td><a href="/parm?parm='+ gridparm +'"><b>' + gridparm + '</b></a></td><td>' + parmDescription + '</td><td><div class="small ui label">' + parmUnit + '</div></td></tr>'
         gridSelect += '</select></div>'
 
         parmString += '</table>'
@@ -52,11 +196,11 @@ class Edex:
 
 
 
-        parmDescriptioon = ''
+        parmDescription = ''
         parmUnit = ''
         for item in parm_dict:
             if item == parm:
-                parmDescriptioon = parm_dict[item][0]
+                parmDescription = parm_dict[item][0]
                 parmUnit = parm_dict[item][1]
 
         gridSelect += '<div class=""><select class="ui select dropdown" id="levelSelect">'
@@ -119,53 +263,77 @@ class Edex:
             #fsctTime = t[-1].getValidPeriod()
             #showString = str(datetime.datetime.fromtimestamp(cycleTime).strftime('%Y-%m-%d %H%M')+" UTC")
             #linkString = str(datetime.datetime.fromtimestamp(cycleTime).strftime('%Y%m%d%H%M'))
-        gridSelect += '<h1 class="ui dividing header">' + name + '</h1>' \
+        gridSelect += '<pre>'+coverage + '</pre><h1 class="ui dividing header">' + name + '</h1>' \
                   + '<h3 class="first">Details</h3>' \
                   + '<p>Grid size: ' + str(data.shape) + '</p>' \
-                  + '<h3 class="first">Selected Parameter</h3><p>' + parm + ' - ' + parmDescriptioon + ' (' + parmUnit + ')</p>' \
+                  + '<h3 class="first">Selected Parameter</h3><p>' + parm + ' - ' + parmDescription + ' (' + parmUnit + ')</p>' \
                   + '<h3 class="first">Grid Parameters</h3><p>' + parmString + '</p>' \
                   + '<h3 class="first">Grid Levels</h3><p><small>' + lvlString + '</small></p>' \
                   + '<p>Unit: ' + grid.getUnit() + '</p>' \
                   + '<p>Time: ' + str(fcstRun[0])  + '</p>'
-        stringReturn = createpage(name,parm,level,str(fcstRun[0]),gridSelect)
+        parameter_content = 'var parameter_content = [];'
+        stringReturn = createpage(name,parm,level,str(fcstRun[0]),gridSelect,parameter_content)
         return stringReturn
 
     @cherrypy.expose
     def parm(self, name="", parm="", level=""):
-        
+        pattern = re.compile("^((ECMF|UKMET|QPE|MPE|FFG|GribModel))")
         request = DataAccessLayer.newDataRequest()
         request.setDatatype("grid")
         request.setParameters(parm)
-        parmDescriptioon = ''
+        parmDescription = ''
         parmUnit = ''
         for item in parm_dict:
             if item == parm:
-                parmDescriptioon = parm_dict[item][0]
+                parmDescription = parm_dict[item][0]
                 parmUnit = parm_dict[item][1]
-        
+
         # Grid names
         available_grids = DataAccessLayer.getAvailableLocationNames(request)
         available_grids.sort()
 
         gridString = ''
         for grid in available_grids:
+            if not pattern.match(grid):
+                gridString += '<h3><a href="/grid?name='+grid+'">'+grid+'</a></h3>'\
+                        '<table class="ui single line table"><thead>' \
+                        '<tr><th>Parameter</th><th>Description</th><th>Unit</th><th>Level</th><th>API</th></tr>' \
+                        '</thead>'
+                request.setLocationNames(grid)
+                availableLevels = DataAccessLayer.getAvailableLevels(request)
+                availableLevels.sort()
+                for llevel in availableLevels:
+                    idhash = hash(grid+parm+str(llevel))
+                    gridString += '<tr><td><a href="/grid?name=' + grid + '&parm=' + parm + '">' + parm + '</a></td>' \
+                            '<td> ' + parmDescription + '</td>' \
+                            '<td>'+ parmUnit +'</td>' \
+                            '<td><div class="small ui label">' + str(llevel) + '</div></td>' \
+                            '<td><a class="showcode circular ui icon basic button" name="'+str(idhash)+'" ' \
+                            'href="/json?name=' + grid + '&parm=' + parm + '&level=' + str(llevel) + '">' \
+                             '<i class="code icon small"></i></a></td></tr>'
 
-            gridString += '<h3><a href="/?name='+grid+'">'+grid+'</a></h3><table class="ui single line table"><thead><tr><th>Parameter</th><th>Description</th><th>Unit</th><th>Level</th><th>API</th></tr></thead>'
-            request.setLocationNames(grid)
-            availableLevels = DataAccessLayer.getAvailableLevels(request)
-            availableLevels.sort()
-            for level in availableLevels:
-                gridString += '<tr><td><a href="/?name=' + grid + '&parm=' + parm + '">' + parm + '</a></td>' \
-                        '<td> ' + parmDescriptioon + '</td>' \
-                        '<td>'+ parmUnit +'</td>' \
-                        '<td><div class="small ui label">' + str(level) + '</div></td><td><a class="circular ui icon basic button" href="#"><i class="code icon small"></i></a></td></tr>'
-            gridString += '</table>'
+
+                    gridString += '''<tr id="'''+str(idhash)+'''" class="transition hidden"><td colspan=5><div class="ui instructive bottom attached segment"><pre><code class="code xml">request.setDatatype("grid")
+request.setLocationNames("'''+grid+'''")
+request.setParameters("'''+parm+'''")
+request.setLevels("'''+str(llevel)+'''")
+
+cycles = DataAccessLayer.getAvailableTimes(request, True)
+times = DataAccessLayer.getAvailableTimes(request)
+latest_run = DataAccessLayer.getForecastRun(cycles[-1],times)
+
+response = DataAccessLayer.getGridData(request, latest_run)
+for grid in response:
+    data = grid.getRawData()
+    lons, lats = grid.getLatLonCoords()</code></pre></div></td></tr>'''
+
+                gridString += '</table>'
 
         # Build dropdowns
         lvlString = ''
         gridSelect = '<div class=""><select class="ui select dropdown" id="gridSelect">'
         for grid in available_grids:
-            gridSelect += '<option value="%s">%s</option>' % (grid, grid)
+            if not pattern.match(grid): gridSelect += '<option value="%s">%s</option>' % (grid, grid)
         gridSelect += '</select></div>'
 
         gridSelect += '<div class=""><select class="ui select dropdown" id="levelSelect">'
@@ -185,13 +353,14 @@ class Edex:
         for time in fcstRun:
             gridSelect += '<option value="%s">%s</option>' % (time, time)
         gridSelect += '</select></div><br><Br>'
-        gridSelect += '<h1 class="ui dividing header">' + parm + ' - ' + parmDescriptioon + ' (' + parmUnit + ')</h1>' \
+        gridSelect += '<h1 class="ui dividing header">' + parm + ' - ' + parmDescription + ' (' + parmUnit + ')</h1>' \
                   + '<p>' + gridString + '</p>'
-        stringReturn = createpage(name,parm,level,"",gridSelect)
+        parameter_content = 'var parameter_content = [];'
+        stringReturn = createpage(name,parm,level,"",gridSelect,parameter_content)
         return stringReturn
-    
-    
-def createpage(name, parm, level, time, gridSelect):
+
+
+def createpage(name, parm, level, time, gridSelect,parameter_content):
     return """
         <html>
             <head>
@@ -200,22 +369,31 @@ def createpage(name, parm, level, time, gridSelect):
                 <link rel="stylesheet" type="text/css" href="/css/style.css">
                 <script src="/js/semantic.min.js"></script>
                 <script type="text/javascript">
+                    """+ parameter_content +"""
                     $(document).ready(function(){
                         $('#gridSelect').val('""" + name + """');
                         $('#parmSelect').val('""" + parm + """');
                         $('#cycleSelect').val('""" + time + """');
-
+                        $('.ui.search').search({
+                          source: parameter_content
+                        });
                         $('.select')
                           .dropdown()
                         ;
+                        $('.showcode').on('click', function(){
+                            divname = '#'+$(this).attr("name")
+                            $(divname).transition('fade down');
+                            console.log($(divname));
+                            return false;
+                        });
                         $("#gridSelect").change(function () {
-                            location.href = "/?name=" + $(this).val();
+                            location.href = "/grid?name=" + $(this).val();
                         });
                         $("#parmSelect").change(function () {
-                            location.href = "/?name=""" + name + """&parm=" + $(this).val();
+                            location.href = "/parm?parm=" + $(this).val();
                         });
                         $("#levelSelect").change(function () {
-                            location.href = "/?name=""" + name + """&parm=""" + parm + """&level=" + $(this).val();
+                            location.href = "/grid?name=""" + name + """&parm=""" + parm + """&level=" + $(this).val();
                         });
                     });
                 </script>
@@ -279,4 +457,6 @@ if __name__ == '__main__':
         }
     }
     #cherrypy.config.update(server_config)
+
+
     cherrypy.quickstart(Edex(), '/', config=server_config)
