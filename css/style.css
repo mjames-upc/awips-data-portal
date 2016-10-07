@@ -1,0 +1,11 @@
+.toc .ui.menu {
+    border-radius: 0;
+    border-width: 0 1px 0 0;
+    box-shadow: none;
+    margin: 0;
+    width: inherit;
+    overflow: hidden;
+    will-change: transform;
+}
+.pusher { max-width: 800px;padding:20px;}
+.pushable {background:#fff;}
