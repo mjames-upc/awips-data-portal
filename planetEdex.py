@@ -13,7 +13,6 @@ import re
 from parms import parm_dict
 import binascii, struct
 
-
 class Edex:
 
     def hash(s):
@@ -21,6 +20,13 @@ class Edex:
 
     @cherrypy.expose
     def json(self, name="", parm="", level="",time=""):
+
+        #
+        # Need point query results for time-series
+        # Cross-sections
+        # Time-height
+        # Var vs. Height
+        #
 
         request = DataAccessLayer.newDataRequest()
         request.setDatatype("grid")
@@ -74,6 +80,7 @@ class Edex:
         # Build dropdowns
         lvlString = ''
         gridSelect = """
+        <h1>AWIPS Forecast & Analysis Grids</h1>
         <div class="ui search">
           <div class="ui icon input">
             <input class="prompt" type="text" placeholder="Search parameters...">
@@ -82,12 +89,10 @@ class Edex:
           <div class="results"></div>
         </div>
         """
-        gridSelect += '<div class=""><select class="ui select dropdown" id="gridSelect">'
         gridCards = '<div class="ui link cards">'
 
         for grid in available_grids:
             if not pattern.match(grid):
-                gridSelect += '<option value="%s">%s</option>' % (grid, grid)
                 gridCards += """<div class="card">
                                     <div class="image"></div>
                                     <div class="content">
@@ -105,16 +110,19 @@ class Edex:
                                       </span>
                                     </div>
                                 </div>""" % (grid, grid)
-        gridSelect += '</select></div>'
         gridSelect += '<div class=""><select class="ui select dropdown" id="parmSelect">'
         parameter_content = 'var parameter_content = ['
+        parmDescription = ''
+
+        previous = ''
         for gridparm in availableParms:
             for item in parm_dict:
-                if item == gridparm:
+                replaced = re.sub('[0-9]{1,2}hr', '', gridparm)
+                if item == replaced and replaced <> previous:
+                    previous = replaced
                     parmDescription = parm_dict[item][0]
-                    parmUnit = parm_dict[item][1]
-            parameter_content += "{ title: '"+gridparm+" - "+parmDescription+"'},"
-            gridSelect += '<option value="%s">%s - %s</option>' % (gridparm, gridparm, parmDescription)
+                    parameter_content += "{ name: '"+replaced+"', title: '"+replaced+" - "+parmDescription+"'},"
+                    gridSelect += '<option value="%s">%s - %s</option>' % (replaced, replaced, parmDescription)
         gridSelect += '</select></div>'
         gridCards += '</div>'
         parameter_content += '];'
@@ -151,7 +159,7 @@ class Edex:
         #    coverage =+ res
 
 
-        pattern = re.compile("^((ECMF|UKMET|QPE|MPE|FFG|GribModel))")
+        pattern = re.compile("^((ECMF|UKMET|QPE|MPE|FFG|GribModel|RFCqpf))")
 
         request = DataAccessLayer.newDataRequest()
         request.setDatatype("grid")
@@ -162,73 +170,95 @@ class Edex:
         # Grid parameters
         availableParms = DataAccessLayer.getAvailableParameters(request)
         availableParms.sort()
-        if parm == "": parm = availableParms[0]
+        if parm == "": parm = availableParms[-1]
         request.setParameters(parm)
         # Grid levels
         availableLevels = DataAccessLayer.getAvailableLevels(request)
         availableLevels.sort()
 
-        if level == "": level = availableLevels[0]
+        if level == "": level = availableLevels[-1]
         request.setLevels(level)
 
         # Build dropdowns
-        parmString = '<table class="ui single line table"><thead><tr><th>Parameter</th><th>Description</th><th>Unit</th></tr></thead>'
-        lvlString = ''
-        gridSelect = '<div class=""><select class="ui select dropdown" id="gridSelect">'
-        for grid in available_grids:
-            if not pattern.match(grid): gridSelect += '<option value="%s">%s</option>' % (grid, grid)
-        gridSelect += '</select></div>'
-        gridSelect += '<div class=""><select class="ui select dropdown" id="parmSelect">'
 
+        parmString = '<table class="ui single line table"><thead><tr><th>Parameter</th><th>Description</th><th>Unit</th><th>API</th></tr></thead>'
+        lvlString = ''
+        #gridSelect = '<div class=""><select class="ui select dropdown" id="gridSelect">'
+        #for grid in available_grids:
+        #    if not pattern.match(grid): gridSelect += '<option value="%s">%s</option>' % (grid, grid)
+        #gridSelect += '</select></div>'
+
+        parmSelect = '<div class=""><select class="ui select dropdown" id="parmSelect">'
         for gridparm in availableParms:
             parmDescription = ''
             parmUnit = ''
             for item in parm_dict:
-                if item == gridparm:
+                idhash = hash(name + gridparm)
+                replaced = re.sub('[0-9]{1,2}hr$', '', gridparm)
+                if item == replaced:
                     parmDescription = parm_dict[item][0]
                     parmUnit = parm_dict[item][1]
-            gridSelect += '<option value="%s">%s - %s</option>' % (gridparm, gridparm, parmDescription)
-            parmString += '<tr><td><a href="/parm?parm='+ gridparm +'"><b>' + gridparm + '</b></a></td><td>' + parmDescription + '</td><td><div class="small ui label">' + parmUnit + '</div></td></tr>'
-        gridSelect += '</select></div>'
+            parmSelect += '<option value="%s">%s - %s</option>' % (gridparm, gridparm, parmDescription)
+            parmString += '<tr><td><a href="/parm?parm='+ gridparm +'"><b>' + gridparm + '</b></a></td>' \
+                '<td>' + parmDescription + '</td>' \
+                '<td><div class="small ui label">' + parmUnit + '</div></td>' \
+                '<td><a class="showcode circular ui icon basic button" name="'+str(idhash)+'" ' \
+                            'href="/json?name=' + name + '&parm=' + gridparm + '">' \
+                             '<i class="code icon small"></i></a></td></tr>'
+
+            parmString += '''<tr id="''' + str(idhash) + '''" class="transition hidden"><td colspan=5><div class="ui instructive bottom attached segment">
+<pre><code class="code xml">request = DataAccessLayer.newDataRequest()
+request.setDatatype("grid")
+request.setLocationNames("''' + name + '''")
+request.setParameters("''' + gridparm + '''")
+levels = DataAccessLayer.getAvailableLevels(request)
+request.setLevels(levels[0])</code></pre>
+</div></td></tr>'''
+
+        parmSelect += '</select></div>'
 
         parmString += '</table>'
-
-
-
 
         parmDescription = ''
         parmUnit = ''
         for item in parm_dict:
-            if item == parm:
+            replaced = re.sub('[0-9]{1,2}hr$', '', parm)
+            if item == replaced:
                 parmDescription = parm_dict[item][0]
                 parmUnit = parm_dict[item][1]
 
-        gridSelect += '<div class=""><select class="ui select dropdown" id="levelSelect">'
+        levelSelect = '<div class=""><select class="ui select dropdown" id="levelSelect">'
         for level in availableLevels:
-            gridSelect += '<option value="%s">%s</option>' % (level, level)
-        gridSelect += '</select></div>'
+            levelSelect += '<option value="%s">%s</option>' % (level, level)
+        levelSelect += '</select></div>'
 
         # Forecast Cycles
         cycles = DataAccessLayer.getAvailableTimes(request, True)
-        t = DataAccessLayer.getAvailableTimes(request)
-        fcstRun = []
-        for time in t:
-            if str(time)[:19] == str(cycles[-1]):
-                fcstRun.append(time)
+        times = DataAccessLayer.getAvailableTimes(request)
+        latest_run = DataAccessLayer.getForecastRun(cycles[-1], times)
 
-        gridSelect += '<div class=""><select class="ui select dropdown" id="cycleSelect">'
-        for time in fcstRun:
-            gridSelect += '<option value="%s">%s</option>' % (time, time)
-        gridSelect += '</select></div><br><Br>'
+        cycleSelect = '<div class=""><select class="ui select dropdown" id="cycleSelect">'
+        for time in latest_run:
+            cycleSelect += '<option value="%s">%s</option>' % (time, time)
+        cycleSelect += '</select></div><br><Br>'
 
         # CREATE IMAGE
-        if len(fcstRun) != 0:
+        import scipy.ndimage
+
+        if len(latest_run) != 0:
         # Request, receive, and interpolate grid
-            response = DataAccessLayer.getGridData(request, fcstRun)
+            response = DataAccessLayer.getGridData(request, latest_run[0:1])
             grid = response[0]
             data = grid.getRawData()
+            dataShape = data.shape
             lons, lats = grid.getLatLonCoords()
+            if data.shape[1] > 500:
+                factor = 151. / data.shape[1]
+                data = scipy.ndimage.zoom(data, factor, order=0)
+                lons = scipy.ndimage.zoom(lons, factor, order=0)
+                lats = scipy.ndimage.zoom(lats, factor, order=0)
             ngrid = data.shape[1]
+
         # Turn off mpl interpolation (takes too long with high res grids)
         if name != "":
             rlons = np.repeat(np.linspace(np.min(lons), np.max(lons), ngrid),
@@ -241,7 +271,7 @@ class Edex:
             # Create Map
             cmap = plt.get_cmap('rainbow')
             matplotlib.rcParams.update({'font.size': 8})
-            plt.figure(figsize=(7, 4), dpi=100)
+            plt.figure(figsize=(6, 4), dpi=100)
             ax = plt.axes(projection=ccrs.PlateCarree())
             cs = plt.contourf(rlons, rlats, rdata, 60, cmap=cmap,
                           transform=ccrs.PlateCarree(),
@@ -254,25 +284,36 @@ class Edex:
             # Write image to stream
             format = "png"
             sio = cStringIO.StringIO()
-            plt.savefig(sio, format=format)
+            plt.savefig(sio, format=format,bbox_inches='tight')
             print "Content-Type: image/%s\n" % format
             sys.stdout.write(sio.getvalue())
-            gridSelect += '<img style="border: 0;" src="data:image/png;base64,'+sio.getvalue().encode("base64").strip()+'"/>'
+            gridImage = '<img style="border: 0;" src="data:image/png;base64,'+sio.getvalue().encode("base64").strip()+'"/>'
             # If we want to show all cycles/fcst hours
             #cycleTime = t[-1].getRefTime().getTime()/1000.0
             #fsctTime = t[-1].getValidPeriod()
             #showString = str(datetime.datetime.fromtimestamp(cycleTime).strftime('%Y-%m-%d %H%M')+" UTC")
             #linkString = str(datetime.datetime.fromtimestamp(cycleTime).strftime('%Y%m%d%H%M'))
-        gridSelect += '<pre>'+coverage + '</pre><h1 class="ui dividing header">' + name + '</h1>' \
-                  + '<h3 class="first">Details</h3>' \
-                  + '<p>Grid size: ' + str(data.shape) + '</p>' \
-                  + '<h3 class="first">Selected Parameter</h3><p>' + parm + ' - ' + parmDescription + ' (' + parmUnit + ')</p>' \
-                  + '<h3 class="first">Grid Parameters</h3><p>' + parmString + '</p>' \
-                  + '<h3 class="first">Grid Levels</h3><p><small>' + lvlString + '</small></p>' \
-                  + '<p>Unit: ' + grid.getUnit() + '</p>' \
-                  + '<p>Time: ' + str(fcstRun[0])  + '</p>'
+        renderHtml =  """
+<div class="ui grid">
+  <div class="six wide column"><h1>"""+ name + """</h1></div>
+  <div class="six wide column">"""+ parmSelect +"""</div>
+</div>
+
+<hr>
+<div class="ui grid">
+  <div class="twelve wide column middle aligned">""" + gridImage + """</div>
+</div>
+                 """+ levelSelect +""" """+ cycleSelect + """
+                <p>Grid size: """+ str(dataShape) +"""</p>
+                <pre class="small">"""+coverage +"""</pre>
+                <h3 class="first">Grid Parameters</h3><p>"""+ parmString +"""</p>
+                <h3 class="first">Grid Levels</h3><p><small>"""+ lvlString +"""</small></p>
+                <p>Unit: """+ grid.getUnit() +"""</p>
+                <p>Time: """+ str(latest_run[0]) +"""</p>"""
+
+
         parameter_content = 'var parameter_content = [];'
-        stringReturn = createpage(name,parm,level,str(fcstRun[0]),gridSelect,parameter_content)
+        stringReturn = createpage(name,parm,level,str(latest_run[0]),renderHtml,parameter_content)
         return stringReturn
 
     @cherrypy.expose
@@ -284,7 +325,9 @@ class Edex:
         parmDescription = ''
         parmUnit = ''
         for item in parm_dict:
-            if item == parm:
+            replaced = re.sub('[0-9]{1,2}hr$', '', parm)
+            if item == replaced:
+                parmDescription = parm
                 parmDescription = parm_dict[item][0]
                 parmUnit = parm_dict[item][1]
 
@@ -374,16 +417,24 @@ def createpage(name, parm, level, time, gridSelect,parameter_content):
                         $('#gridSelect').val('""" + name + """');
                         $('#parmSelect').val('""" + parm + """');
                         $('#cycleSelect').val('""" + time + """');
-                        $('.ui.search').search({
-                          source: parameter_content
-                        });
+                        $('.ui.search')
+                            .search({
+                            source: parameter_content,
+                            minCharacters:3,
+                            maxResults: 20,
+                            onSelect: function(result,response) {
+                                console.log(result.name);
+                                window.location.href='/parm?parm='+result.name;
+                            }
+
+                            })
+                        ;
                         $('.select')
                           .dropdown()
                         ;
                         $('.showcode').on('click', function(){
                             divname = '#'+$(this).attr("name")
                             $(divname).transition('fade down');
-                            console.log($(divname));
                             return false;
                         });
                         $("#gridSelect").change(function () {
@@ -401,7 +452,7 @@ def createpage(name, parm, level, time, gridSelect,parameter_content):
             <body class="">
                 <div class="ui sidebar inverted visible vertical left menu" style="width: 200px !important; height: 1813px !important; margin-top: 0px; left: 0px;">
                     <a class="item">
-                      <b>AWIPS</b>
+                      <b>AWIPS Data Access</b>
                     </a>
                     <div class="item">
                         <div class="header">Available Data</div>
@@ -440,7 +491,7 @@ def createpage(name, parm, level, time, gridSelect,parameter_content):
             """ % ( gridSelect )
 
 if __name__ == '__main__':
-    DataAccessLayer.changeEDEXHost("edex.westus.cloudapp.azure.com")
+    DataAccessLayer.changeEDEXHost("edex-cloud.unidata.ucar.edu")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     server_config ={
         'global': {
