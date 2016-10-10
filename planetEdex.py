@@ -2,6 +2,7 @@ import sys, os, cStringIO
 import psycopg2
 import json
 import geojson
+import datetime
 import cherrypy
 from awips.dataaccess import DataAccessLayer
 import matplotlib.tri as mtri
@@ -110,7 +111,7 @@ class Edex:
                                       </span>
                                     </div>
                                 </div>""" % (grid, grid)
-        gridSelect += '<div class=""><select class="ui select dropdown" id="parmSelect">'
+        #gridSelect += '<div class=""><select class="ui select dropdown" id="parmSelect">'
         parameter_content = 'var parameter_content = ['
         parmDescription = ''
 
@@ -122,8 +123,8 @@ class Edex:
                     previous = replaced
                     parmDescription = parm_dict[item][0]
                     parameter_content += "{ name: '"+replaced+"', title: '"+replaced+" - "+parmDescription+"'},"
-                    gridSelect += '<option value="%s">%s - %s</option>' % (replaced, replaced, parmDescription)
-        gridSelect += '</select></div>'
+                    #gridSelect += '<option value="%s">%s - %s</option>' % (replaced, replaced, parmDescription)
+        #gridSelect += '</select></div>'
         gridCards += '</div>'
         parameter_content += '];'
 
@@ -133,7 +134,6 @@ class Edex:
 
     @cherrypy.expose
     def grid(self, name="RAP40", parm="", level=""):
-
         conn = None
         try:
             conn = psycopg2.connect("dbname = 'metadata' user = 'awips' host = 'localhost' password='awips'")
@@ -228,8 +228,8 @@ request.setLevels(levels[0])</code></pre>
                 parmUnit = parm_dict[item][1]
 
         levelSelect = '<div class=""><select class="ui select dropdown" id="levelSelect">'
-        for level in availableLevels:
-            levelSelect += '<option value="%s">%s</option>' % (level, level)
+        for llevel in availableLevels:
+            levelSelect += '<option value="%s">%s</option>' % (llevel, llevel)
         levelSelect += '</select></div>'
 
         # Forecast Cycles
@@ -237,74 +237,99 @@ request.setLevels(levels[0])</code></pre>
         times = DataAccessLayer.getAvailableTimes(request)
         latest_run = DataAccessLayer.getForecastRun(cycles[-1], times)
 
-        cycleSelect = '<div class=""><select class="ui select dropdown" id="cycleSelect">'
-        for time in latest_run:
-            cycleSelect += '<option value="%s">%s</option>' % (time, time)
-        cycleSelect += '</select></div><br><Br>'
+        dateString = str(latest_run[0:1][0])[0:19]
+        hourdiff = datetime.datetime.utcnow() - datetime.datetime.strptime(dateString, '%Y-%m-%d %H:%M:%S')
+        hour = hourdiff.seconds / 3600  # integer
+        minute = str((hourdiff.seconds - (3600 * hour)) / 60)
+
+
+        hourdiff = ''
+        if hour > 0:
+            hourdiff += str(hour) + "hr "
+        hourdiff += str(minute) + "m ago"
+        if hour > 24:
+            days = hour / 24
+            hourdiff = str(days) + " days ago"
+
+        #hourdiff = str(int(round((datetime.datetime.utcnow() - datetime.datetime.strptime(dateString,
+        #                                                                              '%Y-%m-%d %H:%M:%S')).total_seconds() / 60)))
+
+        #hourdiff = datetime.datetime.utcnow() - datetime.datetime.strptime(dateString,'%Y-%m-%d %H:%M:%S')
+
+        #cycleSelect = '<div class=""><select class="ui select dropdown" id="cycleSelect">'
+        #for time in latest_run:
+        #    cycleSelect += '<option value="%s">%s</option>' % (time, time)
+        #cycleSelect += '</select></div><br><Br>'
 
         # CREATE IMAGE
         import scipy.ndimage
+        gridImage = ''
+        showImg = True
 
-        if len(latest_run) != 0:
-        # Request, receive, and interpolate grid
-            response = DataAccessLayer.getGridData(request, latest_run[0:1])
-            grid = response[0]
-            data = grid.getRawData()
-            dataShape = data.shape
-            lons, lats = grid.getLatLonCoords()
-            if data.shape[1] > 500:
-                factor = 151. / data.shape[1]
-                data = scipy.ndimage.zoom(data, factor, order=0)
-                lons = scipy.ndimage.zoom(lons, factor, order=0)
-                lats = scipy.ndimage.zoom(lats, factor, order=0)
-            ngrid = data.shape[1]
+        if showImg:
+            if len(latest_run) != 0:
+            # Request, receive, and interpolate grid
+                response = DataAccessLayer.getGridData(request, latest_run[0:1])
+                grid = response[0]
+                data = grid.getRawData()
+                lons, lats = grid.getLatLonCoords()
+                if data.shape[1] > 500:
+                    factor = 151. / data.shape[1]
+                    data = scipy.ndimage.zoom(data, factor, order=0)
+                    lons = scipy.ndimage.zoom(lons, factor, order=0)
+                    lats = scipy.ndimage.zoom(lats, factor, order=0)
+                ngrid = data.shape[1]
 
-        # Turn off mpl interpolation (takes too long with high res grids)
-        if name != "":
-            rlons = np.repeat(np.linspace(np.min(lons), np.max(lons), ngrid),
-                          ngrid).reshape(ngrid, ngrid)
-            rlats = np.repeat(np.linspace(np.min(lats), np.max(lats), ngrid),
-                          ngrid).reshape(ngrid, ngrid).T
-            tli = mtri.LinearTriInterpolator(mtri.Triangulation(lons.flatten(),
-                                               lats.flatten()), data.flatten())
-            rdata = tli(rlons, rlats)
-            # Create Map
-            cmap = plt.get_cmap('rainbow')
-            matplotlib.rcParams.update({'font.size': 8})
-            plt.figure(figsize=(6, 4), dpi=100)
-            ax = plt.axes(projection=ccrs.PlateCarree())
-            cs = plt.contourf(rlons, rlats, rdata, 60, cmap=cmap,
-                          transform=ccrs.PlateCarree(),
-                          vmin=rdata.min(), vmax=rdata.max())
-            ax.gridlines()
-            ax.coastlines()
-            ax.set_aspect('auto', adjustable=None)
-            cbar = plt.colorbar(orientation='horizontal')
-            cbar.set_label(grid.getParameter() + " (" + grid.getUnit() + ")")
-            # Write image to stream
-            format = "png"
-            sio = cStringIO.StringIO()
-            plt.savefig(sio, format=format,bbox_inches='tight')
-            print "Content-Type: image/%s\n" % format
-            sys.stdout.write(sio.getvalue())
-            gridImage = '<img style="border: 0;" src="data:image/png;base64,'+sio.getvalue().encode("base64").strip()+'"/>'
-            # If we want to show all cycles/fcst hours
-            #cycleTime = t[-1].getRefTime().getTime()/1000.0
-            #fsctTime = t[-1].getValidPeriod()
-            #showString = str(datetime.datetime.fromtimestamp(cycleTime).strftime('%Y-%m-%d %H%M')+" UTC")
-            #linkString = str(datetime.datetime.fromtimestamp(cycleTime).strftime('%Y%m%d%H%M'))
+            # Turn off mpl interpolation (takes too long with high res grids)
+            if name != "":
+                rlons = np.repeat(np.linspace(np.min(lons), np.max(lons), ngrid),
+                              ngrid).reshape(ngrid, ngrid)
+                rlats = np.repeat(np.linspace(np.min(lats), np.max(lats), ngrid),
+                              ngrid).reshape(ngrid, ngrid).T
+                tli = mtri.LinearTriInterpolator(mtri.Triangulation(lons.flatten(),
+                                                   lats.flatten()), data.flatten())
+                rdata = tli(rlons, rlats)
+                # Create Map
+                cmap = plt.get_cmap('rainbow')
+                matplotlib.rcParams.update({'font.size': 8})
+                plt.figure(figsize=(6, 4), dpi=100)
+                ax = plt.axes(projection=ccrs.PlateCarree())
+                cs = plt.contourf(rlons, rlats, rdata, 60, cmap=cmap,
+                              transform=ccrs.PlateCarree(),
+                              vmin=rdata.min(), vmax=rdata.max())
+                ax.gridlines()
+                ax.coastlines()
+                ax.set_aspect('auto', adjustable=None)
+                cbar = plt.colorbar(orientation='horizontal')
+                cbar.set_label(name +" "+ grid.getLevel() + " " + parmDescription + " "  + grid.getParameter() + " " \
+                        "(" + grid.getUnit() + ") " + " valid " + str(grid.getDataTime().getRefTime()) )
+                # Write image to stream
+                format = "png"
+                sio = cStringIO.StringIO()
+                plt.savefig(sio, format=format,bbox_inches='tight')
+                print "Content-Type: image/%s\n" % format
+                sys.stdout.write(sio.getvalue())
+                gridImage = '<img style="border: 0;" src="data:image/png;base64,'+sio.getvalue().encode("base64").strip()+'"/>'
+                # If we want to show all cycles/fcst hours
+                #cycleTime = t[-1].getRefTime().getTime()/1000.0
+                #fsctTime = t[-1].getValidPeriod()
+                #showString = str(datetime.datetime.fromtimestamp(cycleTime).strftime('%Y-%m-%d %H%M')+" UTC")
+                #linkString = str(datetime.datetime.fromtimestamp(cycleTime).strftime('%Y%m%d%H%M'))
+
         renderHtml =  """
 <div class="ui grid">
-  <div class="six wide column"><h1>"""+ name + """</h1></div>
-  <div class="six wide column">"""+ parmSelect +"""</div>
+  <div class="six wide column"><h1>"""+ name + """</h1>
+    <p><b>Last run:</b> """+ dateString + """ (""" + hourdiff + """)</p>
+    <p><b>Grid size:</b> """+ str(data.shape[0]) + "x" + str(data.shape[1]) +"""</p>
+  </div>
+  <div class="six wide column align right">"""+ parmSelect +"""
+                 """+ levelSelect +"""</div>
 </div>
 
-<hr>
+
 <div class="ui grid">
   <div class="twelve wide column middle aligned">""" + gridImage + """</div>
 </div>
-                 """+ levelSelect +""" """+ cycleSelect + """
-                <p>Grid size: """+ str(dataShape) +"""</p>
                 <pre class="small">"""+coverage +"""</pre>
                 <h3 class="first">Grid Parameters</h3><p>"""+ parmString +"""</p>
                 <h3 class="first">Grid Levels</h3><p><small>"""+ lvlString +"""</small></p>
@@ -313,7 +338,7 @@ request.setLevels(levels[0])</code></pre>
 
 
         parameter_content = 'var parameter_content = [];'
-        stringReturn = createpage(name,parm,level,str(latest_run[0]),renderHtml,parameter_content)
+        stringReturn = createpage(name,parm,str(level),str(latest_run[0]),renderHtml,parameter_content)
         return stringReturn
 
     @cherrypy.expose
@@ -380,8 +405,8 @@ for grid in response:
         gridSelect += '</select></div>'
 
         gridSelect += '<div class=""><select class="ui select dropdown" id="levelSelect">'
-        for level in availableLevels:
-            gridSelect += '<option value="%s">%s</option>' % (level, level)
+        for llevel in availableLevels:
+            gridSelect += '<option value="%s">%s</option>' % (llevel, llevel)
         gridSelect += '</select></div>'
 
         # Forecast Cycles
@@ -399,7 +424,7 @@ for grid in response:
         gridSelect += '<h1 class="ui dividing header">' + parm + ' - ' + parmDescription + ' (' + parmUnit + ')</h1>' \
                   + '<p>' + gridString + '</p>'
         parameter_content = 'var parameter_content = [];'
-        stringReturn = createpage(name,parm,level,"",gridSelect,parameter_content)
+        stringReturn = createpage(name,parm,str(level),"",gridSelect,parameter_content)
         return stringReturn
 
 
@@ -416,6 +441,7 @@ def createpage(name, parm, level, time, gridSelect,parameter_content):
                     $(document).ready(function(){
                         $('#gridSelect').val('""" + name + """');
                         $('#parmSelect').val('""" + parm + """');
+                        $('#levelSelect').val('""" + level + """');
                         $('#cycleSelect').val('""" + time + """');
                         $('.ui.search')
                             .search({
@@ -441,7 +467,7 @@ def createpage(name, parm, level, time, gridSelect,parameter_content):
                             location.href = "/grid?name=" + $(this).val();
                         });
                         $("#parmSelect").change(function () {
-                            location.href = "/parm?parm=" + $(this).val();
+                            location.href = "/grid?name="""+name+"""&parm=" + $(this).val();
                         });
                         $("#levelSelect").change(function () {
                             location.href = "/grid?name=""" + name + """&parm=""" + parm + """&level=" + $(this).val();
@@ -450,6 +476,7 @@ def createpage(name, parm, level, time, gridSelect,parameter_content):
                 </script>
             </head>
             <body class="">
+
                 <div class="ui sidebar inverted visible vertical left menu" style="width: 200px !important; height: 1813px !important; margin-top: 0px; left: 0px;">
                     <a class="item">
                       <b>AWIPS Data Access</b>
