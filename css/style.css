@@ -7,9 +7,12 @@
     overflow: hidden;
     will-change: transform;
 }
-.pusher { max-width: 800px;padding:20px;}
+.pusher {padding:20px;}
 .pushable {background:#fff;}
 
+.ui.search {
+    margin: 30px 0;
+}
 .ui.search .prompt {
     border-radius: 0;
     width:700px;
@@ -19,3 +22,5 @@
     width: 700px;
     margin-top: 0;
 }
+
+#map { height:180px;}
