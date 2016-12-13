@@ -16,6 +16,7 @@ import binascii, struct
 
 class Edex:
 
+
     def hash(s):
         return binascii.b2a_base64(struct.pack('i', hash(s)))
 
@@ -67,8 +68,6 @@ class Edex:
     @cherrypy.expose
     def index(self):
 
-        pattern = re.compile("^((ECMF|UKMET|QPE|MPE|FFG|GribModel|HFR))")
-
         request = DataAccessLayer.newDataRequest()
         request.setDatatype("grid")
         # Grid names
@@ -90,27 +89,42 @@ class Edex:
           <div class="results"></div>
         </div>
         """
-        gridCards = ' <div class="ui one column grid"><div class="ten wide column"><div class="ui link cards">'
-
+        gridCards = '<div class="ui link cards">'
+        gridMenu = ''
         for grid in available_grids:
+
+            for gname, info in grid_dictionary.iteritems():
+                if gname == grid:
+                    centerid = info[0]
+                    subcenterid = info[1]
+                    gridid = info[2]
+                    centername = wmo_centers[centerid]
+                    gridnav = navigation[gridid]
+                    # '216': ['grid over Alaska (polar stereographic)', '139', '107', '45.0', '45.0', 'km'],
+                    grid_size = gridnav[1] + "x" + gridnav[2]
+                    grid_res = str(round(float(gridnav[3]),2)) + " " + gridnav[5]
+
             if not pattern.match(grid):
+                gridMenu += """<a class="item" href="/grid?name="""+ grid +"""">"""+ grid +"""</a>"""
                 gridCards += """<div class="card">
                                     <div class="image"></div>
                                     <div class="content">
-                                        <div class="header"><a href="/grid?name=%s">%s</a></div>
-                                        <div class="meta">Meta</div>
-                                        <div class="description">Description</div>
+                                        <div class="header"><a href="/grid?name="""+ grid +"""">"""+ grid +"""</a></div>
+                                        <div class="meta">""" + gridnav[0] + """</div>
+                                        <div class="description">""" + centername[1] + """ (""" + centername[0] + """)</div>
                                     </div>
                                     <div class="extra content">
-                                      <span class="right floated">
-                                        Len by Width
-                                      </span>
+                                      <span class="right floated">""" + grid_size + """</span>
                                       <span>
-                                        <i class="user icon"></i>
-                                        75 parameters
+                                        """ + grid_res + """ resolution
                                       </span>
                                     </div>
-                                </div>""" % (grid, grid)
+                                </div>
+
+
+                                """
+
+
 
 
 
@@ -123,43 +137,42 @@ class Edex:
                     previous = replaced
                     parmDescription = parm_dict[item][0]
                     parameter_content += "{ name: '"+replaced+"', title: '"+replaced+" - "+parmDescription+"'},"
-        gridCards += '</div></div></div>' + gridCards
+        gridCards += '</div>'
         parameter_content += '];'
         renderHtml = gridSelect + gridCards
         sideContent = ''
 
-        stringReturn = createpage("", "", "", "",renderHtml,sideContent,parameter_content)
+        stringReturn = createpage("", "", "", "",renderHtml,sideContent,parameter_content,gridMenu)
         return stringReturn
 
 
     @cherrypy.expose
     def grid(self, name="RAP40", parm="", level=""):
         conn = None
+        coverage = ''
+
         try:
             conn = psycopg2.connect("dbname = 'metadata' user = 'awips' host = 'localhost' password='awips'")
+            cur = conn.cursor()
+            cur.execute("select * from gridcoverage where id = "
+                        "(select distinct location_id from grid_info where datasetid = '" + name + "');")
+            columns = (
+                'dtype', 'id', 'crs', 'dx', 'dy', 'firstgridpointcorner', 'the_geom',
+                'la1', 'lo1', 'name', 'nx', 'ny', 'spacingunit', 'latin1', 'latin2', 'lov',
+                'majoraxis', 'minoraxis', 'la2', 'latin', 'lo2', 'lad'
+            )
+            results = []
+            for row in cur.fetchall():
+                results.append(dict(zip(columns, row)))
+            coverage += json.dumps(results, indent=2)
+            # coverage = ''
+            # for res in results:
+            #    coverage =+ res
         except psycopg2.DatabaseError, ex:
             print 'I am unable to connect the database: ' + str(ex)
-            sys.exit(1)
-
-        cur = conn.cursor()
-        cur.execute("select * from gridcoverage where id = "
-                    "(select distinct location_id from grid_info where datasetid = '"+name+"');")
-        columns = (
-        'dtype', 'id', 'crs', 'dx', 'dy', 'firstgridpointcorner', 'the_geom',
-        'la1','lo1','name','nx','ny','spacingunit','latin1','latin2','lov',
-        'majoraxis','minoraxis','la2','latin','lo2', 'lad'
-        )
-        coverage = ''
-        results = []
-        for row in cur.fetchall():
-            results.append(dict(zip(columns, row)))
-        coverage += json.dumps(results, indent=2)
-        #coverage = ''
-        #for res in results:
-        #    coverage =+ res
+            #sys.exit(1)
 
 
-        pattern = re.compile("^((ECMF|UKMET|QPE|MPE|FFG|GribModel|RFCqpf))")
 
         request = DataAccessLayer.newDataRequest()
         request.setDatatype("grid")
@@ -181,13 +194,13 @@ class Edex:
 
         # Build dropdowns
 
-        parmString = '<table class="ui single line table"><thead><tr><th>Parameter</th><th>Description</th><th>Unit</th><th>API</th></tr></thead>'
+        parmString = '<table class="ui single line table"><thead><tr><th>Parameter</th><th>Description</th><th>Unit</th><th>DAF</th></tr></thead>'
         lvlString = ''
         #gridSelect = '<div class=""><select class="ui select dropdown" id="gridSelect">'
         #for grid in available_grids:
         #    if not pattern.match(grid): gridSelect += '<option value="%s">%s</option>' % (grid, grid)
         #gridSelect += '</select></div>'
-
+        parmMenu = ''
         parmSelect = '<div class=""><select class="ui select dropdown" id="parmSelect">'
         for gridparm in availableParms:
             parmDescription = ''
@@ -199,6 +212,12 @@ class Edex:
                     parmDescription = parm_dict[item][0]
                     parmUnit = parm_dict[item][1]
             parmSelect += '<option value="%s">%s - %s</option>' % (gridparm, gridparm, parmDescription)
+            parmActiveClass = ''
+            if gridparm == parm:
+                parmActiveClass = 'active'
+
+            if parmDescription != "":
+                parmMenu += '<a class="item %s" href="/grid?name=%s&parm=%s"><div class="small ui blue label">%s</div> %s</a>' % (parmActiveClass, name, gridparm,gridparm, parmDescription)
             parmString += '<tr><td><a href="/grid?name='+name+'&parm='+ gridparm +'"><b>' + gridparm + '</b></a></td>' \
                 '<td>' + parmDescription + '</td>' \
                 '<td><div class="small ui label">' + parmUnit + '</div></td>' \
@@ -235,7 +254,7 @@ request.setLevels(levels[0])</code></pre>
         # Forecast Cycles
         cycles = DataAccessLayer.getAvailableTimes(request, True)
         times = DataAccessLayer.getAvailableTimes(request)
-        latest_run = DataAccessLayer.getForecastRun(cycles[-1], times)
+        latest_run = DataAccessLayer.getForecastCycle(cycles[-1], times)
 
         dateString = str(latest_run[0:1][0])[0:19]
         hourdiff = datetime.datetime.utcnow() - datetime.datetime.strptime(dateString, '%Y-%m-%d %H:%M:%S')
@@ -282,11 +301,11 @@ request.setLevels(levels[0])</code></pre>
                 grid = response[0]
                 data = grid.getRawData()
                 lons, lats = grid.getLatLonCoords()
-                #if data.shape[1] > 500:
-                #    factor = 151. / data.shape[1]
-                #    data = scipy.ndimage.zoom(data, factor, order=0)
-                #    lons = scipy.ndimage.zoom(lons, factor, order=0)
-                #    lats = scipy.ndimage.zoom(lats, factor, order=0)
+                if data.shape[1] > 500:
+                    factor = 151. / data.shape[1]
+                    data = scipy.ndimage.zoom(data, factor, order=0)
+                    lons = scipy.ndimage.zoom(lons, factor, order=0)
+                    lats = scipy.ndimage.zoom(lats, factor, order=0)
                 ngrid = data.shape[1]
                 gridSize = str(data.shape[0]) + "x" + str(data.shape[1])
                 gridUnit = str(grid.getUnit())
@@ -305,9 +324,10 @@ request.setLevels(levels[0])</code></pre>
                 matplotlib.rcParams.update({'font.size': 8})
                 plt.figure(figsize=(6, 4), dpi=100)
                 ax = plt.axes(projection=ccrs.PlateCarree())
-                maxValue = 100
-                if isinf(maxValue):
-                    maxValue = 100
+                #maxValue = rdata.min()
+                maxValue = rdata.max()
+                #if rdata.min() > 9999:
+                #    maxValue = 100
                 minValue = rdata.min()
 
                 cs = plt.contourf(rlons, rlats, rdata, 60, cmap=cmap,
@@ -325,7 +345,7 @@ request.setLevels(levels[0])</code></pre>
                 plt.savefig(sio, format=format,bbox_inches='tight')
                 print "Content-Type: image/%s\n" % format
                 sys.stdout.write(sio.getvalue())
-                gridImage = str(minValue) + ',' + str(maxValue) + '<br><img style="border: 0;" src="data:image/png;base64,'+sio.getvalue().encode("base64").strip()+'"/>'
+                gridImage = '<img style="border: 0;" src="data:image/png;base64,'+sio.getvalue().encode("base64").strip()+'"/>'
 
         if not showImg:
             gridSize = ''
@@ -367,13 +387,9 @@ request.setLevels(levels[0])</code></pre>
                     """ + gridImage + """
                 </div>
 
-                <div><h3>Grid Projection</h3><pre class="small">coverage = """+coverage +"""</pre></div>
+                <!--<div><h3>Grid Projection</h3><pre class="small">coverage = """+coverage +"""</pre></div>-->
                 <h3 class="first">"""+name+""" Grid Parameters</h3>
-                <div>"""+ parmString +"""</div>
-                <h3 class="first">"""+name+""" Grid Levels</h3>
-                <div class="small">"""+ lvlString +"""</div>
-                <p>Unit: """+ gridUnit +"""</p>
-                <p>Time: """+ str(latest_run[0]) +"""</p>"""
+                <div>"""+ parmString +"""</div>"""
 
 
 
@@ -399,12 +415,11 @@ request.setLevels(levels[0])</code></pre>
             """
 
         parameter_content = 'var parameter_content = [];'
-        stringReturn = createpage(name,parm,str(level),str(latest_run[0]),renderHtml,sideContent,parameter_content)
+        stringReturn = createpage(name,parm,str(level),str(latest_run[0]),renderHtml,sideContent,parameter_content, parmMenu)
         return stringReturn
 
     @cherrypy.expose
     def parm(self, name="", parm="", level=""):
-        pattern = re.compile("^((ECMF|UKMET|QPE|MPE|FFG|GribModel))")
         request = DataAccessLayer.newDataRequest()
         request.setDatatype("grid")
         availableParms = DataAccessLayer.getAvailableParameters(request)
@@ -437,7 +452,7 @@ request.setLevels(levels[0])</code></pre>
             if not pattern.match(grid):
                 gridString += '<h3><a href="/grid?name='+grid+'">'+grid+'</a></h3>'\
                         '<table class="ui single line table"><thead>' \
-                        '<tr><th>Parameter</th><th>Description</th><th>Unit</th><th>Level</th><th>API</th></tr>' \
+                        '<tr><th>Parameter</th><th>Description</th><th>Unit</th><th>Level</th><th>DAF</th></tr>' \
                         '</thead>'
                 request.setLocationNames(grid)
                 availableLevels = DataAccessLayer.getAvailableLevels(request)
@@ -507,12 +522,15 @@ request.setLevels("'''+str(llevel)+'''")
                      + '<p>' + gridString + '</p></div></div>'
 
         sideContent = ''
-
-        stringReturn = createpage(name,parm,str(level),"",renderHtml,sideContent,parameter_content)
+        parmlist = ''
+        stringReturn = createpage(name,parm,str(level),"",renderHtml,sideContent,parameter_content, parmlist)
         return stringReturn
 
 
-def createpage(name, parm, level, time, mainContent, sideContent, parameter_content):
+def createpage(name, parm, level, time, mainContent, sideContent, parameter_content, parmlist):
+
+
+
     return """
         <html>
             <head>
@@ -576,33 +594,13 @@ def createpage(name, parm, level, time, mainContent, sideContent, parameter_cont
             <body class="">
 
                 <div class="ui sidebar inverted visible vertical left menu" style="width: 200px !important; height: 1813px !important; margin-top: 0px; left: 0px;">
-                    <a class="item">
+                    <a class="item header" href="/">
                       <b>AWIPS Data Access</b>
                     </a>
                     <div class="item">
-                        <div class="header">Available Data</div>
+                        <a href="/grid?name="""+ name +""""><div class="header">""" + name + """</div></a>
                         <div class="menu">
-                            <a class="item">
-                              Forecast & Analysis Grids
-                            </a>
-                            <a class="item">
-                              Satellite Imagery
-                            </a>
-                            <a class="item">
-                              Level 3 Radar
-                            </a>
-                            <a class="item">
-                              Upper Air Soundings
-                            </a>
-                            <a class="item">
-                              Text Obs
-                            </a>
-                            <a class="item">
-                              Lightning
-                            </a>
-                            <a class="item">
-                              Maps
-                            </a>
+                            """ + parmlist + """
                         </div>
                     </div>
                 </div>
@@ -623,7 +621,8 @@ def createpage(name, parm, level, time, mainContent, sideContent, parameter_cont
             """ % ( mainContent, sideContent )
 
 if __name__ == '__main__':
-    DataAccessLayer.changeEDEXHost("edex-cloud.unidata.ucar.edu")
+    pattern = re.compile("^((ECMF|UKMET|QPE|MPE|FFG|GribModel|HFR|RFCqpf|ESTOFS|ETSS|GFSGuide|estofs|EPAC40))")
+    DataAccessLayer.changeEDEXHost("edex.unidata.ucar.edu")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     server_config ={
         'global': {
