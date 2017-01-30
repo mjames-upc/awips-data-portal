@@ -1,3 +1,8 @@
+.ui.inverted.segment, .ui.primary.inverted.segment {
+    background: url(../images/awips_bg.jpg) no-repeat center;
+    background-size: cover;
+}
+#grid-select {z-index:100;}
 .toc .ui.menu {
     border-radius: 0;
     border-width: 0 1px 0 0;
@@ -7,11 +12,17 @@
     overflow: hidden;
     will-change: transform;
 }
-.pusher {padding:20px;}
+.main.container {
+    margin: 4em 2em;
+}
+.parm.table {
+    margin-top: 4em;
+}
 .pushable {background:#fff;}
-
+.small {font-size:11px;}
 .ui.search {
     margin: 30px 0;
+    width:85%;
 }
 .ui.search .prompt {
     border-radius: 0;
@@ -22,5 +33,235 @@
     width: 700px;
     margin-top: 0;
 }
+.leaflet-pane {
+    z-index: 4;
+}
+#map { height:400px;width:100%;}
+#datamap { height:400px;width:100%;}
+#dsmap { height:400px;width:100%;}
+.preview-legend { height:60px;width:100%;}
+.spatial-coverage-map svg .countries,
+.map svg .countries,
+.classifier-map svg .countries {
+    fill: white;
+}
+.spatial-coverage-map svg .leaflet-interactive,
+.map svg .leaflet-interactive,
+.classifier-map svg .leaflet-interactive {
+    stroke-width: 1px;
+}
+.preview-viz {
+    min-height: 200px;
+}
+.preview-viz svg .panel-background,
+.map svg .panel-background,
+.spatial-coverage-map svg .panel-background {
+    fill: #DBDFE6;
+    opacity: 0.8;
+}
+.preview-viz svg .graticule,
+.map svg .graticule,
+.spatial-coverage-map svg .graticule,
+.preview-viz svg .equator,
+.map svg .equator,
+.spatial-coverage-map svg .equator {
+    stroke-opacity: 0.05;
+    fill-opacity: 0;
+    stroke: black;
+}
+.preview-viz svg .country,
+.map svg .country,
+.spatial-coverage-map svg .country {
+    fill: white;
+    stroke: #D8D8D8;
+    opacity: 0.8;
+}
+.preview-viz svg .countries,
+.map svg .countries,
+.spatial-coverage-map svg .countries {
+    stroke: #A3A7B0;
+    opacity: 0.6;
+}
+.dataset-details .preview-legend {
+    margin: 1rem;
+    padding: 0!important;
+}
+.datavis .preview-container .preview-legend {
+    height: 80px;
+    margin-top: 10px;
+}
+.datavis .preview-container .preview-legend .tick-line {
+    stroke: black;
+}
+.datavis .preview-container .preview-legend .tick-label {
+    font-size: 10px;
+}
+.legend-component .tick-line {
+    stroke: black;
+}
+.legend-component .tick-label {
+    font-size: 10px;
+}
+.hidden.menu {
+    display: none;
+}
 
-#map { height:180px;}
+.masthead.segment {
+    min-height: 700px;
+    padding: 1em 0em;
+}
+.masthead .logo.item img {
+    margin-right: 1em;
+}
+.masthead .ui.menu .ui.button {
+    margin-left: 0.5em;
+}
+.masthead h1.ui.header {
+    margin-top: 3em;
+    margin-bottom: 0em;
+    font-size: 4em;
+    font-weight: normal;
+}
+.masthead h2 {
+    font-size: 1.7em;
+    font-weight: normal;
+}
+
+.ui.vertical.stripe {
+    padding: 8em 0em;
+}
+
+.ui.vertical.stripe .floated.image {
+    clear: both;
+}
+.ui.vertical.stripe p {
+    font-size: 1.33em;
+}
+.ui.vertical.stripe .horizontal.divider {
+    margin: 3em 0em;
+}
+
+.quote.stripe.segment {
+    padding: 0em;
+}
+.quote.stripe.segment .grid .column {
+    padding-top: 5em;
+    padding-bottom: 5em;
+}
+
+.footer.segment {
+    padding: 5em 0em;
+}
+
+.secondary.pointing.menu .toc.item {
+    display: none;
+}
+
+
+
+.dataset-vendors .main-layout .main-wrapper .nav-section {
+    box-shadow: -1px 0px 0px 0px #DCE0E6;
+}
+.main-layout .main-wrapper .nav-section .signup-message,
+.main-layout .main-wrapper .nav-section .access-message {
+    font-size: 1.29rem;
+    color: white;
+    text-align: center;
+}
+.main-layout .main-wrapper .nav-section .access-title,
+.main-layout .main-wrapper .nav-section .api-title {
+    color: white;
+}
+.main-layout .main-wrapper .nav-section .row:before {
+    box-shadow: 0px -1px 0px 0px #575F6D;
+}
+.main-layout .main-wrapper .nav-section .dataset-id-title h4,
+.main-layout .main-wrapper .nav-section .query-title h4 {
+    color: #FF961C;
+}
+.main-layout .main-wrapper .nav-section .iframe-embed-container {
+    display: none;
+    padding-top: 2em;
+}
+.main-layout .main-wrapper .nav-section .snippet {
+    background-color: #222A34;
+    color: #A3A7B0;
+    padding: 10px;
+    border-radius: 4px;
+}
+.main-layout .main-wrapper .nav-section .snippet pre {
+    white-space: pre-wrap;
+    /* css-3 */
+    white-space: -moz-pre-wrap;
+    /* Mozilla, since 1999 */
+    white-space: -pre-wrap;
+    /* Opera 4-6 */
+    white-space: -o-pre-wrap;
+    /* Opera 7 */
+    word-wrap: break-word;
+    /* Internet Explorer 5.5+ */
+}
+.main-layout .main-wrapper .nav-section .additional-api {
+    color: white;
+    font-size: 1.29rem;
+}
+.static {
+    padding: 40px 50px!important;
+    position: fixed !important;
+    width: 37.5%;
+}
+.sidepane {
+    background-color: #e7e7e7;
+    padding-left: 0!important;
+    padding: 50px;
+}
+
+
+
+
+
+
+
+@media only screen and (max-width: 700px) {
+    .ui.fixed.menu {
+        display: none !important;
+    }
+    .secondary.pointing.menu .item,
+    .secondary.pointing.menu .menu {
+        display: none;
+    }
+    .secondary.pointing.menu .toc.item {
+        display: block;
+    }
+    .masthead.segment {
+        min-height: 350px;
+    }
+    .masthead h1.ui.header {
+        font-size: 2em;
+        margin-top: 1.5em;
+    }
+    .masthead h2 {
+        margin-top: 0.5em;
+        font-size: 1.5em;
+    }
+    .ui.search {
+        margin: 0;
+    }
+    .ui.search .prompt {
+        position:relative;
+        border-radius: 0;
+        width:100%;
+    }
+    .ui.input {
+        position: relative;
+        font-weight: 400;
+        font-style: normal;
+        display: block;
+        color: rgba(0,0,0,.87);
+    }
+    .ui.search>.results {
+        width: 100%;
+        margin-top: 0;
+    }
+    #searchButton{display:none;}
+}

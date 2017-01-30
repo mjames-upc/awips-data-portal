@@ -1,0 +1,622 @@
+<html>
+<head>
+    <script type="text/javascript" src="./js/jquery-1.11.3.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="./css/semantic.min.css">
+    <link rel="stylesheet" type="text/css" href="./css/style.css">
+    <script src="./js/semantic.min.js"></script>
+    <script type="text/javascript">
+        var parameter_content = [{ name: '4LFTX', title: '4LFTX - Best (4-Layer) Lifted Index'},{ name: 'ALBDO', title: 'ALBDO - Albedo'},{ name: 'AV', title: 'AV - Absolute Vorticity'},{ name: 'BGRUN', title: 'BGRUN - Baseflow-Groundwater Runoff'},{ name: 'BLI', title: 'BLI - Best Lifted Index (to 500 mb)'},{ name: 'BMIXL', title: 'BMIXL - Blackadars Mixing Length Scale'},{ name: 'BRTMP', title: 'BRTMP - Brightness Temperature'},{ name: 'CAPE', title: 'CAPE - Convective Available Potential Energy'},{ name: 'CC', title: 'CC - Ceiling'},{ name: 'CCOND', title: 'CCOND - Canopy Conductance'},{ name: 'CD', title: 'CD - Drag coefficient'},{ name: 'CDCON', title: 'CDCON - Convective Cloud Cover'},{ name: 'CFRZR', title: 'CFRZR - Categorical Freezing Rain (yes=1; no=0)'},{ name: 'CICEP', title: 'CICEP - Categorical Ice Pellets (yes=1; no=0)'},{ name: 'CIce', title: 'CIce - Cloud Ice'},{ name: 'CIn', title: 'CIn - Convective Inhibition'},{ name: 'CLGTN', title: 'CLGTN - Categorical Lightning'},{ name: 'CLWMR', title: 'CLWMR - Cloud Mixing Ratio'},{ name: 'CNVHR', title: 'CNVHR - Deep Convective Heating Rate'},{ name: 'CNWAT', title: 'CNWAT - Plant Canopy Surface Water'},{ name: 'CONVP', title: 'CONVP - Convection Potential'},{ name: 'CP', title: 'CP - Convective Precipitation'},{ name: 'CPOFP', title: 'CPOFP - Probability of Frozen Precipitation'},{ name: 'CPRAT', title: 'CPRAT - Convective Precipitation Rate'},{ name: 'CRAIN', title: 'CRAIN - Categorical Rain (yes=1; no=0)'},{ name: 'CSNOW', title: 'CSNOW - Categorical Snow (yes=1; no=0)'},{ name: 'CUEFI', title: 'CUEFI - Convective Cloud Efficiency'},{ name: 'CWAT', title: 'CWAT - Cloud Water'},{ name: 'CWDI', title: 'CWDI - Convective Weather Detection Index'},{ name: 'CWORK', title: 'CWORK - Cloud Work Function'},{ name: 'DIRPW', title: 'DIRPW - Primary Wave Direction'},{ name: 'DIRSW', title: 'DIRSW - Secondary Wave Direction'},{ name: 'DLWRF', title: 'DLWRF - Downward Long-Wave Radiation Flux'},{ name: 'DSWRF', title: 'DSWRF - Downward Short-Wave Radiation Flux'},{ name: 'DpD', title: 'DpD - Dew Point Depression or Deficit'},{ name: 'DpT', title: 'DpT - Dew Point Temperature'},{ name: 'DpTerranl', title: 'DpTerranl - Dewpoint Error Analysis'},{ name: 'ELEV', title: 'ELEV - Ocean Surface Elevation Relative to Geoid'},{ name: 'EMSP', title: 'EMSP - MSLP (Eta model reduction)'},{ name: 'EPT', title: 'EPT - Equivalent Potential Temperature'},{ name: 'ETCWL', title: 'ETCWL - Extra Tropical Storm Surge Combined Surge and Tide'},{ name: 'ETSRG', title: 'ETSRG - Extra Tropical Storm Surge'},{ name: 'EVP', title: 'EVP - Evaporation'},{ name: 'FFG01', title: 'FFG01 - 1-hr flash flood guidance'},{ name: 'FFG03', title: 'FFG03 - 3-hr flash flood guidance'},{ name: 'FFG06', title: 'FFG06 - 6-hr flash flood guidance'},{ name: 'FFG12', title: 'FFG12 - 12-hr flash flood guidance'},{ name: 'FFG24', title: 'FFG24 - 24-hr flash flood guidance'},{ name: 'FLDCP', title: 'FLDCP - Field Capacity'},{ name: 'FPRATE', title: 'FPRATE - Freezing Rain Precipitation Rate'},{ name: 'FRICV', title: 'FRICV - Friction Velocity'},{ name: 'FRIME', title: 'FRIME - Rime Factor'},{ name: 'GFLUX', title: 'GFLUX - Ground Heat Flux'},{ name: 'GH', title: 'GH - Geopotential Height'},{ name: 'GRAUP', title: 'GRAUP - Graupel (Snow pellets)'},{ name: 'GVV', title: 'GVV - Vertical Velocity geometric'},{ name: 'GeH', title: 'GeH - Geometric Height'},{ name: 'HCDC', title: 'HCDC - High Cloud Cover'},{ name: 'HINDEX', title: 'HINDEX - Haines Index'},{ name: 'HPBL', title: 'HPBL - Planetary Boundary Layer Height'},{ name: 'HTSGW', title: 'HTSGW - Significant Height of Combined Wind Waves and Swell'},{ name: 'Heli', title: 'Heli - Storm Relative helicity'},{ name: 'ICAHT', title: 'ICAHT - ICAO Standard Atmosphere Reference Height'},{ name: 'ICEC', title: 'ICEC - Ice Cover'},{ name: 'IPRATE', title: 'IPRATE - Ice Pellets Precipitation Rate'},{ name: 'KI', title: 'KI - K Index'},{ name: 'LAND', title: 'LAND - Land Cover (0=sea, 1=land)'},{ name: 'LCDC', title: 'LCDC - Low Cloud Cover'},{ name: 'LHF', title: 'LHF - Latent Heat net Flux'},{ name: 'LRGHR', title: 'LRGHR - Large Scale Condensate Heating Rate'},{ name: 'LTNG', title: 'LTNG - Lightning'},{ name: 'LWAVR', title: 'LWAVR - Long Wave Radiation Flux'},{ name: 'LWHR', title: 'LWHR - Long-Wave Radiative Heating Rate'},{ name: 'LgSP', title: 'LgSP - Large Scale Precipitation (non-Convective)'},{ name: 'MAXDVV', title: 'MAXDVV - Hourly Maximum of Downward Vertical Vorticity in the lowest 400hPa'},{ name: 'MAXREF', title: 'MAXREF - Hourly Maximum of Simulated Reflectivity at 1 km AGL'},{ name: 'MAXRH', title: 'MAXRH - Maximum Relative Humidity'},{ name: 'MAXUVV', title: 'MAXUVV - Hourly Maximum of Upward Vertical Vorticity in the lowest 400hPa'},{ name: 'MAXUW', title: 'MAXUW - U Component of Hourly Maximum 10m Wind Speed'},{ name: 'MAXVW', title: 'MAXVW - V Component of Hourly Maximum 10m Wind Speed'},{ name: 'MCDC', title: 'MCDC - Medium Cloud Cover'},{ name: 'MCon', title: 'MCon - Horizontal Moisture Divergence'},{ name: 'MINRH', title: 'MINRH - Minimum Relative Humidity'},{ name: 'MIXLY', title: 'MIXLY - Number of mixed Layers next to Surface'},{ name: 'MMSP', title: 'MMSP - MSLP (MAPS System Reduction)'},{ name: 'MSTAV', title: 'MSTAV - Moisture availability'},{ name: 'MXSALB', title: 'MXSALB - Maximum Snow Albedo'},{ name: 'MXUPHL', title: 'MXUPHL - Hourly Maximum of Updraft Helicity over Layer 2km to 5 km AGL'},{ name: 'MnT', title: 'MnT - Minimum Temperature'},{ name: 'MxT', title: 'MxT - Maximum Temperature'},{ name: 'NLRS', title: 'NLRS - Net long Wave Radiation Flux (Surface)'},{ name: 'NSWRS', title: 'NSWRS - Net Short-Wave Radiation Flux (Surface)'},{ name: 'O3MR', title: 'O3MR - Ozone Mixing Ratio'},{ name: 'P', title: 'P - Pressure'},{ name: 'PERPW', title: 'PERPW - Primary Wave Mean Period'},{ name: 'PERSW', title: 'PERSW - Secondary Wave Mean Periods'},{ name: 'PEVAP', title: 'PEVAP - Potential Evaporation'},{ name: 'PEVPR', title: 'PEVPR - Potential Evaporation Rate'},{ name: 'PLI', title: 'PLI - Parcel Lifted Index (to 500 mb)'},{ name: 'PLPL', title: 'PLPL - Pressure of most parcel with highest theta-e in lowest 300 mb'},{ name: 'PMSL', title: 'PMSL - Pressure Reduced to MSL'},{ name: 'POP', title: 'POP - Probability of 0.01 Inch of Precipitation (POP)'},{ name: 'POROS', title: 'POROS - Soil porosity'},{ name: 'PPFFG', title: 'PPFFG - Probability of Precipitation exceeding flash flood guidance values'},{ name: 'PR', title: 'PR - Precipitation Rate'},{ name: 'PROCON', title: 'PROCON - Probability of Convection'},{ name: 'PTyp', title: 'PTyp - Precipitation Type'},{ name: 'PVV', title: 'PVV - Vertical Velocity Pressure'},{ name: 'PW', title: 'PW - Precipitable Water'},{ name: 'PWTHER', title: 'PWTHER - Predominant Weather'},{ name: 'Perranl', title: 'Perranl - Pressure Error Analysis'},{ name: 'PoT', title: 'PoT - Potential Temperature'},{ name: 'RCQ', title: 'RCQ - Humidity parameterin Canopy Conductance'},{ name: 'RCS', title: 'RCS - Solar parameter in Canopy Conductance'},{ name: 'RCSOL', title: 'RCSOL - Soil Moisture parameter in Canopy Conductance'},{ name: 'RCT', title: 'RCT - Temperature parameter in Canopy Conductance'},{ name: 'REFC', title: 'REFC - Composite Reflectivity'},{ name: 'REFD', title: 'REFD - Reflectivity'},{ name: 'RETOP', title: 'RETOP - Echo Top'},{ name: 'RH', title: 'RH - Relative Humidity'},{ name: 'RLYRS', title: 'RLYRS - Number of Soil Layers in root zone'},{ name: 'RPRATE', title: 'RPRATE - Rain Precipitation Rate'},{ name: 'RSMIN', title: 'RSMIN - Minimal Stomatal Resistance'},{ name: 'RWMR', title: 'RWMR - Rain Mixing Ratio'},{ name: 'SCP', title: 'SCP - Snow Cover'},{ name: 'SFCR', title: 'SFCR - Surface roughness'},{ name: 'SFEXC', title: 'SFEXC - Exchange coefficient'},{ name: 'SH', title: 'SH - Specific Humidity'},{ name: 'SHF', title: 'SHF - Sensible Heat net Flux'},{ name: 'SLI', title: 'SLI - Surface Lifted Index'},{ name: 'SMDRY', title: 'SMDRY - Direct Evaporation Cease (Soil Moisture)'},{ name: 'SMREF', title: 'SMREF - Transpiration Stress-Onset (Soil Moisture)'},{ name: 'SNFALB', title: 'SNFALB - Snow-Free Albedo'},{ name: 'SNMR', title: 'SNMR - Snow Mixing Ratio'},{ name: 'SNOHF', title: 'SNOHF - Snow Phase Change Heat Flux'},{ name: 'SNOM', title: 'SNOM - Snow melt'},{ name: 'SOILL', title: 'SOILL - Liquid volumetric Soil Moisture (non-frozen)'},{ name: 'SOILM', title: 'SOILM - Soil Moisture Content'},{ name: 'SOILW', title: 'SOILW - Volumetric Soil Moisture Content'},{ name: 'SOTYP', title: 'SOTYP - Soil Type'},{ name: 'SPRATE', title: 'SPRATE - Snow Precipitation Rate'},{ name: 'SSRUN', title: 'SSRUN - Storm Surface Runoff'},{ name: 'STRM', title: 'STRM - Stream Function'},{ name: 'SUNSD', title: 'SUNSD - Sunshine Duration'},{ name: 'SWDIR', title: 'SWDIR - Direction of Swell Waves'},{ name: 'SWELL', title: 'SWELL - Significant Height of Swell Waves'},{ name: 'SWHR', title: 'SWHR - Solar Radiative Heating Rate'},{ name: 'SWPER', title: 'SWPER - Mean Period of Swell Waves'},{ name: 'SnD', title: 'SnD - Snow Depth'},{ name: 'T', title: 'T - Temperature'},{ name: 'TCC', title: 'TCC - Total Cloud Cover'},{ name: 'TCCerranl', title: 'TCCerranl - Total Cloud Cover Error Analysis'},{ name: 'TCLSW', title: 'TCLSW - Total Column-Integrated Supercooled liquid Water'},{ name: 'TCOLC', title: 'TCOLC - Total Column-Integrated Condensate'},{ name: 'TCOLG', title: 'TCOLG - Total Column Integrates Graupel'},{ name: 'TCOLI', title: 'TCOLI - Total Column-Integrated Cloud Ice'},{ name: 'TCOLM', title: 'TCOLM - Total Column-Integrated Melting Ice'},{ name: 'TCOLR', title: 'TCOLR - Total Column Integrated Rain'},{ name: 'TCOLS', title: 'TCOLS - Total Column Integrated Snow'},{ name: 'TCOLW', title: 'TCOLW - Total Column-Integrated Cloud Water'},{ name: 'TCOND', title: 'TCOND - Total Condensate'},{ name: 'TEMPWTR', title: 'TEMPWTR - Water Temperature'},{ name: 'THICK', title: 'THICK - Thickness'},{ name: 'TKE', title: 'TKE - Turbulent Kinetic Energy'},{ name: 'TOTSN', title: 'TOTSN - Total Snowfall'},{ name: 'TOZNE', title: 'TOZNE - Total ozone'},{ name: 'TP', title: 'TP - Total Precipitation'},{ name: 'TSOIL', title: 'TSOIL - Soil Temperature'},{ name: 'Terranl', title: 'Terranl - Temperature Error Analysis'},{ name: 'ThP', title: 'ThP - Thunderstorm Probability'},{ name: 'U-GWD', title: 'U-GWD - Zonal Flux of Gravity Wave Stress'},{ name: 'UFLX', title: 'UFLX - Momentum Flux, U Component'},{ name: 'ULWRF', title: 'ULWRF - Upward Long-Wave Radiation Flux'},{ name: 'UOGRD', title: 'UOGRD - U-Component of Current'},{ name: 'USTM', title: 'USTM - U-Component Storm Motion'},{ name: 'USWRF', title: 'USWRF - Upward Short-Wave Radiation Flux'},{ name: 'V-GWD', title: 'V-GWD - Meridional Flux of Gravity Wave Stress'},{ name: 'VAPP', title: 'VAPP - Vapor Pressure'},{ name: 'VEG', title: 'VEG - Vegetation'},{ name: 'VFLX', title: 'VFLX - Momentum Flux, V Component'},{ name: 'VGTYP', title: 'VGTYP - Vegetation Type'},{ name: 'VILIQ', title: 'VILIQ - Vertically-Integrated liquid'},{ name: 'VOGRD', title: 'VOGRD - V-Component of Current'},{ name: 'VRATE', title: 'VRATE - Ventilation Rate'},{ name: 'VSS', title: 'VSS - Vertical Speed Shear'},{ name: 'VSTM', title: 'VSTM - V-Component Storm Motion'},{ name: 'VUCSH', title: 'VUCSH - Vertical U-Component Shear'},{ name: 'VVCSH', title: 'VVCSH - Vertical V-Component Shear'},{ name: 'Vis', title: 'Vis - Visibility'},{ name: 'Viserranl', title: 'Viserranl - Visibility Error Analysis'},{ name: 'WATR', title: 'WATR - Water Runoff'},{ name: 'WCI', title: 'WCI - Wind chill factor'},{ name: 'WD', title: 'WD - Wind Direction (from which blowing)'},{ name: 'WDerranl', title: 'WDerranl - Wind Direction Error Analysis'},{ name: 'WEASD', title: 'WEASD - Water Equivalent of Accumulated Snow Depth'},{ name: 'WGH', title: 'WGH - 5-Wave Geopotential Height'},{ name: 'WGS', title: 'WGS - Wind Speed Gust'},{ name: 'WGSerranl', title: 'WGSerranl - Wind Speed Gust Error Analysis'},{ name: 'WILT', title: 'WILT - Wilting Point'},{ name: 'WS', title: 'WS - Wind Speed'},{ name: 'WSerranl', title: 'WSerranl - Wind Speed Error Analysis'},{ name: 'WVDIR', title: 'WVDIR - Direction of Wind Waves'},{ name: 'WVHGT', title: 'WVHGT - Significant Height of Wind Waves (m)'},{ name: 'WVPER', title: 'WVPER - Mean Period of Wind Waves'},{ name: 'peak-wav-dir', title: 'peak-wav-dir - Peak Wave Direction'},{ name: 'peak-wav-per', title: 'peak-wav-per - Peak Wave Period'},{ name: 'staticCoriolis', title: 'staticCoriolis - Coriolis Parameter'},{ name: 'staticSpacing', title: 'staticSpacing - Grid Spacing'},{ name: 'staticTopo', title: 'staticTopo - Topography'},{ name: 'uW', title: 'uW - U-Component of Wind'},{ name: 'vW', title: 'vW - V-Component of Wind'},{ name: 'wxType', title: 'wxType - Weather'},];
+        $(document).ready(function(){
+            /*
+             var mymap = L.map('mapid').setView([51.505, -0.09], 13);
+
+             L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpandmbXliNDBjZWd2M2x6bDk3c2ZtOTkifQ._QA7i5Mpkd_m30IGElHziw', {
+             maxZoom: 18,
+             attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+             '<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
+             id: 'mapbox.streets'
+             }).addTo(mymap);
+             var bounds = [[54.559322, -5.767822], [56.1210604, -3.021240]];
+             L.rectangle(bounds, {color: "#ff7800", weight: 1}).addTo(map);
+             map.fitBounds(bounds);
+             */
+            $('#gridSelect').val('');
+            $('#parmSelect').val('');
+            $('#levelSelect').val('');
+            $('#cycleSelect').val('');
+            $('.ui.search')
+                    .search({
+                        source: parameter_content,
+                        minCharacters:3,
+                        maxResults: 20,
+                        onSelect: function(result,response) {
+                            console.log(result.name);
+                            window.location.href='/parm?parm='+result.name;
+                        }
+
+                    })
+            ;
+            $('.select')
+                    .dropdown()
+            ;
+            $('.showcode').on('click', function(){
+                divname = '#'+$(this).attr("name")
+                $(divname).transition('fade down');
+                return false;
+            });
+            $("#gridSelect").change(function () {
+                location.href = "/grid?name=" + $(this).val();
+            });
+            $("#parmSelect").change(function () {
+                location.href = "/grid?name=&parm=" + $(this).val();
+            });
+            $("#levelSelect").change(function () {
+                location.href = "/grid?name=&parm=&level=" + $(this).val();
+            });
+        });
+    </script>
+</head>
+<body class="">
+<div class="main-layout">
+
+    <div class="header ui grid">
+        <div class="computer tablet only row">
+            <div class="ui inverted menu navbar">
+                <a href="/" class="menu item">
+                    AWIPS Data Portal
+                </a>
+                <a href="http://python-awips.readthedocs.io" target="_blank" class="item">PYTHON API</a>
+                <a href="http://python-awips.readthedocs.io/en/latest/examples/index.html" target="_blank" class="item">DATA VIZUALIZATION</a>
+                <div class="hidden item" id="user-message-placeholder">
+                    <div class="user-notification" id="message-contents">
+                    </div>
+                </div>
+                <div class="right menu">
+
+                    <div class="user-menu ui right dropdown item">
+                        Michael James
+                        <i class="dropdown icon"></i>
+                        <div class="menu">
+                            <a href="/account/settings/" class="item">Account Settings</a>
+                            <a href="http://docs.planetos.com" class="item">Product Guide</a>
+                            <a href="/account/logout/" class="item">Logout</a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <div class="mobile only narrow row">
+            <div class="ui inverted navbar menu">
+                <a href="/" class="menu item">
+                    AWIPS Data Access
+                </a>
+                <div class="right menu open">
+                    <a href="" class="menu item">
+                        <i class="content icon"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="ui vertical menu hidden">
+                <div class="item datahub">
+                    <div class="menu">
+                        <a href="/datasets" class="item">DATAHUB</a>
+
+                        <a href="/account/settings/" class="item submenu">Account Settings</a>
+                        <a href="http://docs.planetos.com" class="item submenu">Product Guide</a>
+                        <a href="/account/logout/" class="item submenu">Logout</a>
+
+                    </div>
+                </div>
+                <div class="item website">
+                    <div class="menu">
+                        <a href="https://planetos.com/powerboard/" class="item">POWERBOARD</a>
+                        <a href="http://opennex.planetos.com/" class="item" target="”_blank”">NASA OPENNEX</a>
+                        <a href="https://planetos.com/company/" class="item">COMPANY</a>
+                        <a href="https://planetos.com/blog/" class="item">BLOG</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-wrapper ui stackable padded grid">
+        <div class="main-section ten wide column">
+
+                <div class="ui search">
+                    <div class="ui icon input">
+                        <input class="prompt" type="text" placeholder="Search parameters...">
+                        <i class="search icon"></i>
+                    </div>
+                    <div class="results"></div>
+                </div>
+
+            <div class="ui link cards"><div class="card">
+                <div class="image"></div>
+                <div class="content">
+                    <div class="header"><a href="/grid?name=CMC">CMC</a></div>
+                    <div class="meta">CMC GEM CONUS Model (Some Fields)</div>
+                    <div class="description">Canadian Meteorological Centre (CMC)</div>
+                </div>
+                <div class="extra content">
+                    <span class="right floated">245x190</span>
+                                      <span>
+                                        35.0 km resolution
+                                      </span>
+                </div>
+            </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=DGEX">DGEX</a></div>
+                        <div class="meta">12 km LCC limited domain CONUS grid (used by DGEX)</div>
+                        <div class="description">National Centers for Environmental Prediction (NCEP)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">491x303</span>
+                                      <span>
+                                        12.0 km resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=FNMOC-FAROP">FNMOC-FAROP</a></div>
+                        <div class="meta">360 by 181 ENSEMBLE-MET</div>
+                        <div class="description">US Navy Fleet Numerical Meteorology and Oceanography Center (FNMOC)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">360x181</span>
+                                      <span>
+                                        1.0 degree resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=FNMOC-NCODA">FNMOC-NCODA</a></div>
+                        <div class="meta">( 1440 x 721 ) FNMOC-NCODA Equidistant Cylindrical</div>
+                        <div class="description">US Navy Fleet Numerical Meteorology and Oceanography Center (FNMOC)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">1440x721</span>
+                                      <span>
+                                        0.25 degree resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=FNMOC-WW3">FNMOC-WW3</a></div>
+                        <div class="meta">Global (longitude/latitude grid)</div>
+                        <div class="description">US Navy Fleet Numerical Meteorology and Oceanography Center (FNMOC)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">360x181</span>
+                                      <span>
+                                        1.0 degree resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=GFS">GFS</a></div>
+                        <div class="meta">Global Latitude/Longitude 0.25 deg Resolution</div>
+                        <div class="description">National Centers for Environmental Prediction (NCEP)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">1440x721</span>
+                                      <span>
+                                        0.25 degree resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=GFS20">GFS20</a></div>
+                        <div class="meta">grid over the contiguous United States - Quadruple Resolution (used by the 29-km NAM model)(Lambert Conformal)</div>
+                        <div class="description">National Centers for Environmental Prediction (NCEP)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">369x257</span>
+                                      <span>
+                                        20.32 km resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=HPCGuide">HPCGuide</a></div>
+                        <div class="meta"> Grid over CONUS - (2.54 km)</div>
+                        <div class="description">National Centers for Environmental Prediction (NCEP)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">2145x1377</span>
+                                      <span>
+                                        2.54 km resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=HPCqpf">HPCqpf</a></div>
+                        <div class="meta">grid over the contiguous United States - 8X Resolution (10 km) (Used by the Radar mosaics) (Lambert Conformal)</div>
+                        <div class="description">National Centers for Environmental Prediction (NCEP)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">737x513</span>
+                                      <span>
+                                        10.16 km resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=HPCqpfNDFD">HPCqpfNDFD</a></div>
+                        <div class="meta"> Grid over the contiguous United States - 16X Resolution (5 km) </div>
+                        <div class="description">National Centers for Environmental Prediction (NCEP)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">1073x689</span>
+                                      <span>
+                                        5.08 km resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=HRRR">HRRR</a></div>
+                        <div class="meta"> Grid over CONUS - (2.54 km)</div>
+                        <div class="description">National Centers for Environmental Prediction (NCEP)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">2145x1377</span>
+                                      <span>
+                                        2.54 km resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=LAMP2p5">LAMP2p5</a></div>
+                        <div class="meta"> Grid over CONUS - (2.54 km)</div>
+                        <div class="description">National Centers for Environmental Prediction (NCEP)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">2145x1377</span>
+                                      <span>
+                                        2.54 km resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=MOSGuide">MOSGuide</a></div>
+                        <div class="meta"> Grid over CONUS - (2.54 km)</div>
+                        <div class="description">National Centers for Environmental Prediction (NCEP)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">2145x1377</span>
+                                      <span>
+                                        2.54 km resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=MOSGuideExtended">MOSGuideExtended</a></div>
+                        <div class="meta"> extended conus nest 2.5 km</div>
+                        <div class="description">National Centers for Environmental Prediction (NCEP)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">2145x1597</span>
+                                      <span>
+                                        2.54 km resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=NAM12">NAM12</a></div>
+                        <div class="meta">Grid over the Contiguous United States (used by the 12-km NAM Model) (Lambert Conformal)</div>
+                        <div class="description">National Centers for Environmental Prediction (NCEP)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">614x428</span>
+                                      <span>
+                                        12.19 km resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=NAM40">NAM40</a></div>
+                        <div class="meta">Regional - CONUS - Double Resolution (Lambert Conformal)</div>
+                        <div class="description">National Centers for Environmental Prediction (NCEP)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">185x129</span>
+                                      <span>
+                                        40.63 km resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=NAVGEM">NAVGEM</a></div>
+                        <div class="meta">259920-point (720x361) global Lon/Lat grid</div>
+                        <div class="description">US Navy Fleet Numerical Meteorology and Oceanography Center (FNMOC)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">720x361</span>
+                                      <span>
+                                        0.5 degree resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=NCWF">NCWF</a></div>
+                        <div class="meta">NCWF grid</div>
+                        <div class="description">National Centers for Environmental Prediction (NCEP)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">1830x918</span>
+                                      <span>
+                                        0.04 degree resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=NOHRSC-SNOW">NOHRSC-SNOW</a></div>
+                        <div class="meta">NOHRSC-SNOW</div>
+                        <div class="description">NWS Field Stations (NCEP)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">867x419</span>
+                                      <span>
+                                        0.07 degree resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=NamDNG">NamDNG</a></div>
+                        <div class="meta"> Grid over CONUS - (2.54 km)</div>
+                        <div class="description">National Centers for Environmental Prediction (NCEP)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">2145x1377</span>
+                                      <span>
+                                        2.54 km resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=RAP13">RAP13</a></div>
+                        <div class="meta">Regional (CONUS) Lambert Conformal grid</div>
+                        <div class="description">National Centers for Environmental Prediction (NCEP)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">451x337</span>
+                                      <span>
+                                        13.54 km resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=RAP20">RAP20</a></div>
+                        <div class="meta">Regional - CONUS (Lambert Conformal)</div>
+                        <div class="description">National Centers for Environmental Prediction (NCEP)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">301x225</span>
+                                      <span>
+                                        20.32 km resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=RAP40">RAP40</a></div>
+                        <div class="meta">Regional - CONUS - Double Resolution (Lambert Conformal)</div>
+                        <div class="description">National Centers for Environmental Prediction (NCEP)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">185x129</span>
+                                      <span>
+                                        40.63 km resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=RTMA">RTMA</a></div>
+                        <div class="meta"> Grid over CONUS - (2.54 km)</div>
+                        <div class="description">National Centers for Environmental Prediction (NCEP)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">2145x1377</span>
+                                      <span>
+                                        2.54 km resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=URMA25">URMA25</a></div>
+                        <div class="meta"> Grid over CONUS - (2.54 km)</div>
+                        <div class="description">National Centers for Environmental Prediction (NCEP)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">2145x1377</span>
+                                      <span>
+                                        2.54 km resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="image"></div>
+                    <div class="content">
+                        <div class="header"><a href="/grid?name=WaveWatch">WaveWatch</a></div>
+                        <div class="meta">Regional (longitude/latitude grid)</div>
+                        <div class="description">National Centers for Environmental Prediction (NCEP)</div>
+                    </div>
+                    <div class="extra content">
+                        <span class="right floated">288x157</span>
+                                      <span>
+                                        1.25 degree resolution
+                                      </span>
+                    </div>
+                </div>
+
+
+            </div>
+
+        </div>
+
+        <div class="sidebar six wide column">
+
+            <div class="nav-section sticky" style="top: 70px;">
+
+
+                <div class="nav-content-wrapper ui padding vertically divided grid">
+                    <div class="sixteen wide column">
+                        <h3 class="">DATA ACCESS</h3>
+                    </div>
+
+                    <div class="row">
+                        <div class="data-link sixteen wide column">
+                            <a href="http://dpipe-api.production02.planetos.com/api/data/dataset_opendap_access/data/noaa_nam_awips_12" target="_blank" class="access-button ui primary fluid blue button x-tall">PLANET OS THREDDS DATA SERVER</a>
+                        </div>
+                        <div class="request-link sixteen wide column">
+                            <a href="#" class="request-button ui blue basic fluid button x-tall conversation-trigger" data-conversation-tag="request-another-access">REQUEST ANOTHER ACCESS OPTION</a>
+                        </div>
+                    </div>
+
+                    <div class="eight wide column">
+                        <h3>API</h3>
+                    </div>
+                    <div class="documentation-link-container eight wide right aligned column">
+                        <a href="http://docs.planetos.com/#rest-api-v1" class="documentation-link">Documentation</a><br>
+                        <a href="http://api.planetos.com/console/" class="documentation-link">API Console</a>
+                    </div>
+
+                    <div class="row">
+                        <div class="dataset-id-title sixteen wide column">
+                            <h4>DATASET ID</h4>
+                            <div class="snippet dataset-id">
+                                <pre class="code">noaa_nam_awips_12</pre>
+                            </div>
+                        </div>
+                        <div class="query-title sixteen wide column">
+                            <h4>EXAMPLE POINT QUERY (JSON)</h4>
+                            <div class="snippet query">
+                                <pre class="code"><a class="query-example" href="http://api.planetos.com/v1/datasets/noaa_nam_awips_12/point?origin=dataset-details&amp;lat=39.4&amp;apikey=f8952526d266432f8692f29cbb329120&amp;lon=-100.2" target="_blank">http://api.planetos.com/v1/datasets/noaa_nam_awips_12/point?origin=dataset-details&amp;lat=39.4&amp;apikey=f8952526d266432f8692f29cbb329120&amp;lon=-100.2</a></pre>
+                            </div>
+                            <h4>EXAMPLE POINT QUERY (CSV)</h4>
+                            <div class="snippet query">
+                                <pre class="code"><a class="query-example" href="http://api.planetos.com/v1/datasets/noaa_nam_awips_12/point?origin=dataset-details&amp;lat=39.4&amp;apikey=f8952526d266432f8692f29cbb329120&amp;lon=-100.2&amp;csv=true&amp;count=50" target="_blank">http://api.planetos.com/v1/datasets/noaa_nam_awips_12/point?origin=dataset-details&amp;lat=39.4&amp;apikey=f8952526d266432f8692f29cbb329120&amp;lon=-100.2&amp;csv=true&amp;count=50</a></pre>
+                            </div>
+                            <div class="iframe-embed-container">
+                                <h4>IFRAME EMBED</h4>
+                                <div class="snippet iframe-embed">
+                                    <pre class="code"><a class="iframe-embed-example" href="" target="_blank"></a></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+
+
+        </div>
+    </div>
+
+
+
+</div>
+</body>
+
+</html>
