@@ -1,12 +1,12 @@
 import sys, os, cStringIO
 import json
-import geojson
+#import geojson
 import datetime
 import cherrypy
 from awips.dataaccess import DataAccessLayer
-import matplotlib.tri as mtri
-import matplotlib.pyplot as plt
-import matplotlib
+#import matplotlib.tri as mtri
+#import matplotlib.pyplot as plt
+#import matplotlib
 #import cartopy.crs as ccrs
 import numpy as np
 import re
@@ -259,17 +259,6 @@ request.setLevels(levels[0])</code></pre>
 
 
 
-
-
-
-
-
-
-
-
-
-
-
     @cherrypy.expose
     def api(self, name="", parm="", level=""):
         request = DataAccessLayer.newDataRequest()
@@ -285,36 +274,26 @@ request.setLevels(levels[0])</code></pre>
         cycles = DataAccessLayer.getAvailableTimes(request, True)
         times = DataAccessLayer.getAvailableTimes(request)
         fcstRun = DataAccessLayer.getForecastRun(cycles[-1], times)
-        response = DataAccessLayer.getGridData(request, [fcstRun[0]])
+        response = DataAccessLayer.getGridData(request, [fcstRun[-1]])
 
         data = response[0].getRawData()
-        lons, lats = response[0].getLatLonCoords()
-        ngrid = data.shape[1]
-        rlons = np.repeat(np.linspace(np.min(lons), np.max(lons), ngrid),
-                      ngrid).reshape(ngrid, ngrid)
-        rlats = np.repeat(np.linspace(np.min(lats), np.max(lats), ngrid),
-                      ngrid).reshape(ngrid, ngrid).T
-        tli = mtri.LinearTriInterpolator(mtri.Triangulation(lons.flatten(),
-                       lats.flatten()), data.flatten())
-        rdata = tli(rlons, rlats)
-        jslat = rlats[0].tolist()
-        jslon = rlons[:,0].tolist()
-        jsdict = {
-            "lats"    : jslat[::-1],
-            "lons"    : jslon,
-            "values"  : rdata.transpose().tolist()[::-1],
+        lon, lat = response[0].getLatLonCoords()
+        datadict = {
+            "lats"    : lat.transpose().tolist()[::-1],
+            "lons"    : lon.transpose().tolist()[::-1],
+            "values"  : data.transpose().tolist()[::-1],
             "metadata": {
-                "timestamp": "1484956800000",
+                "datetime": "1484956800000",
                 "unit": "K",
-                "bounds": {
-                    "latmax": rlats[0].max(),
-                    "lonmin": rlons[:,0].min(),
-                    "lonmax": rlons[:,0].max(),
-                    "latmin": rlats[0].min()
+                "coverage": {
+                    "latmax": str(lat.max()),
+                    "lonmin": str(lon.min()),
+                    "lonmax": str(lon.max()),
+                    "latmin": str(lat.min())
                 }
             }
         }
-        return json.dumps(jsdict)
+        return json.dumps(datadict)
 
 
 
@@ -383,12 +362,15 @@ request.setLevels(levels[0])</code></pre>
                         /*
                          * leaflet data rendering
                          */
+
                         getGeoJSON('/api?name=RAP40&parm=T&level=0.0SFC',function(response) {
                             var json = response.json;
                             var container = document.getElementById('dsmap');
                             var maps = mapConfig(colormaps, container);
                             maps.jsonMap.drawImage(json, response.json.metadata);
                         });
+
+
                         getGeoJSONBounds('/polygon?name=RAP40',function(response) {
                             var coveragePolygon = response.json;
 
@@ -416,8 +398,6 @@ request.setLevels(levels[0])</code></pre>
 
 <pre class='small'><code>   from awips.dataaccess import DataAccessLayer
    import json
-   import numpy as np
-   import matplotlib.tri as mtri
 
    class Edex:
 
@@ -425,47 +405,32 @@ request.setLevels(levels[0])</code></pre>
        def api(self, name="", parm="", level=""):
            request = DataAccessLayer.newDataRequest()
            request.setDatatype("grid")
-           request.setLocationNames(name)
-           request.setParameters(parm)
-           availableLevels = DataAccessLayer.getAvailableLevels(request)
-           availableLevels.sort()
-           level = str(level)
-           if level == "": level = availableLevels[-1]
-           request.setLevels(level)
-
+           request.setLocationNames("RAP40")
+           request.setParameters("T")
+           request.setLevels("0.0SFC")
            cycles = DataAccessLayer.getAvailableTimes(request, True)
            times = DataAccessLayer.getAvailableTimes(request)
            fcstRun = DataAccessLayer.getForecastRun(cycles[-1], times)
-           response = DataAccessLayer.getGridData(request, [fcstRun[0]])
-
+           response = DataAccessLayer.getGridData(request, [fcstRun[-1]])
            data = response[0].getRawData()
-           lons, lats = response[0].getLatLonCoords()
-           ngrid = data.shape[1]
-           rlons = np.repeat(np.linspace(np.min(lons), np.max(lons), ngrid),
-                         ngrid).reshape(ngrid, ngrid)
-           rlats = np.repeat(np.linspace(np.min(lats), np.max(lats), ngrid),
-                         ngrid).reshape(ngrid, ngrid).T
-           tli = mtri.LinearTriInterpolator(mtri.Triangulation(lons.flatten(),
-                          lats.flatten()), data.flatten())
-           rdata = tli(rlons, rlats)
-           jslat = rlats[0].tolist()
-           jslon = rlons[:,0].tolist()
-           jsdict = {
-               "lats"    : jslat[::-1],
-               "lons"    : jslon,
-               "values"  : rdata.transpose().tolist()[::-1],
+           lon, lat = response[0].getLatLonCoords()
+           datadict = {
+               "lats"    : lat.transpose().tolist()[::-1],
+               "lons"    : lon.transpose().tolist()[::-1],
+               "values"  : data.transpose().tolist()[::-1],
                "metadata": {
-                   "timestamp": "1484956800000",
+                   "datetime": "1484956800000",
                    "unit": "K",
-                   "bounds": {
-                       "latmax": rlats[0].max(),
-                       "lonmin": rlons[:,0].min(),
-                       "lonmax": rlons[:,0].max(),
-                       "latmin": rlats[0].min()
+                   "coverage": {
+                       "latmax": str(lat.max()),
+                       "lonmin": str(lon.min()),
+                       "lonmax": str(lon.max()),
+                       "latmin": str(lat.min())
                    }
                }
            }
-           return json.dumps(jsdict)
+           return json.dumps(datadict)
+
 
        if __name__ == '__main__':
            DataAccessLayer.changeEDEXHost("edex.westus.cloudapp.azure.com")
@@ -489,7 +454,6 @@ request.setLevels(levels[0])</code></pre>
     &lt;script async defer src="https://maps.googleapis.com/maps/api/js?key=API_KEY"&gt;&lt;/script&gt;
     &lt;script type="text/javascript"&gt;
         $(document).ready(function(){
-            /* leaflet data rendering */
             getGeoJSON('/api?name=RAP40&parm=T&level=0.0SFC',function(response) {
                 var json = response.json;
                 var container = document.getElementById('dsmap');
@@ -850,6 +814,8 @@ def getHeader():
         <script src="/js/tab.min.js"></script>
         <script src="/js/semantic.min.js"></script>
         <script src="/js/leaflet.js"></script>
+        <script src="/js/leaflet-heat.js"></script>
+        <script src="/js/leaflet-idw.js"></script>
         <script src="/js/parms.js"></script>
         <script src="/js/python-awips.js"></script>
 
