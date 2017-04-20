@@ -1,10 +1,9 @@
 import sys, os, cStringIO
 import json
-#import geojson
 import datetime
 import cherrypy
 from awips.dataaccess import DataAccessLayer
-#import matplotlib.tri as mtri
+import matplotlib.tri as mtri
 #import matplotlib.pyplot as plt
 #import matplotlib
 #import cartopy.crs as ccrs
@@ -98,7 +97,7 @@ class Edex:
         availableLevels = DataAccessLayer.getAvailableLevels(request)
         availableLevels.sort()
         if level == "": level = availableLevels[-1]
-        request.setLevels(level)
+        request.setLevels(str(level))
 
         # Build Dropdowns
         parmString = '<table class="ui single line table"><thead><tr><th>Parameter</th><th>Description</th><th>Unit</th><th>DAF</th></tr></thead>'
@@ -176,7 +175,6 @@ request.setLevels(levels[0])</code></pre>
             hourdiff = str(days) + " days ago"
 
         # Grid Info
-        #'NAM12': ['7', '0', '218','North American Model 12km'],
         for gname, info in grid_dictionary.iteritems():
             if gname == name:
                 centerid = info[0]
@@ -185,20 +183,17 @@ request.setLevels(levels[0])</code></pre>
                 #gridname = info[3]
                 centername = wmo_centers[centerid]
                 gridnav = navigation[gridid]
-                # '216': ['grid over Alaska (polar stereographic)', '139', '107', '45.0', '45.0', 'km'],
                 grid_size = gridnav[1] + "x" + gridnav[2]
                 grid_res = gridnav[3] +" " + gridnav[5]
 
         renderHtml =  """                <script type="text/javascript">
                     var createGeoJSON = function(){
-                        /* leaflet data map from geojson */
                         getGeoJSON('/api?name="""+ name + """&parm="""+parm+"""&level="""+str(level)+"""',function(response) {
                             var json = response.json;
                             var container = document.getElementById('dsmap');
                             var maps = mapConfig(colormaps, container);
                             maps.jsonMap.drawImage(json, response.json.metadata);
                         });
-                        /* bounds polygon map */
                         getGeoJSONBounds('/polygon?name="""+ name + """',function(response) {
                             var coveragePolygon = response.json;
                               var container = document.getElementById('datamap');
@@ -256,6 +251,51 @@ request.setLevels(levels[0])</code></pre>
         return stringReturn
 
 
+    @cherrypy.expose
+    def remapped(self, name="", parm="", level=""):
+        request = DataAccessLayer.newDataRequest()
+        request.setDatatype("grid")
+        request.setLocationNames(name)
+        request.setParameters(parm)
+        availableLevels = DataAccessLayer.getAvailableLevels(request)
+        availableLevels.sort()
+        level = str(level)
+        if level == "": level = availableLevels[-1]
+        request.setLevels(level)
+        cycles = DataAccessLayer.getAvailableTimes(request, True)
+        times = DataAccessLayer.getAvailableTimes(request)
+        fcstRun = DataAccessLayer.getForecastRun(cycles[-1], times)
+        response = DataAccessLayer.getGridData(request, [fcstRun[-1]])
+        data = response[0].getRawData()
+        lons, lats = response[0].getLatLonCoords()
+        ngrid = data.shape[1]
+        rlons = np.repeat(np.linspace(np.min(lons), np.max(lons), ngrid),
+                      ngrid).reshape(ngrid, ngrid)
+        rlats = np.repeat(np.linspace(np.min(lats), np.max(lats), ngrid),
+                      ngrid).reshape(ngrid, ngrid).T
+        tli = mtri.LinearTriInterpolator(mtri.Triangulation(lons.flatten(),
+                       lats.flatten()), data.flatten())
+        rdata = tli(rlons, rlats)
+        jslat = rlats[0].tolist()
+        jslon = rlons[:,0].tolist()
+        jsdict = {
+            "lats"    : jslat[::-1],
+            "lons"    : jslon,
+            "values"  : rdata.transpose().tolist()[::-1],
+            "metadata": {
+                "datetime": "1484956800000",
+                "unit": "K",
+                "projection": "remapped",
+                "coverage": {
+                    "latmax": rlats[0].max(),
+                    "lonmin": rlons[:,0].min(),
+                    "lonmax": rlons[:,0].max(),
+                    "latmin": rlats[0].min()
+                }
+            }
+        }
+        return json.dumps(jsdict)
+
 
 
 
@@ -285,6 +325,7 @@ request.setLevels(levels[0])</code></pre>
             "metadata": {
                 "datetime": "1484956800000",
                 "unit": "K",
+                "projection": "native",
                 "coverage": {
                     "latmax": str(lat.max()),
                     "lonmin": str(lon.min()),
@@ -352,36 +393,69 @@ request.setLevels(levels[0])</code></pre>
 
 
 
-
-
     @cherrypy.expose
-    def geojson(self, name="RAP40", parm="T", level=""):
+    def geojson(self, name="RAP40", parm="T", level="0.0SFC"):
+        import cartopy.crs as ccrs
+        import matplotlib.pyplot as plt
+        from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+        import numpy as np
+
+        request = DataAccessLayer.newDataRequest()
+        request.setDatatype("grid")
+        request.setLocationNames(name)
+        request.setParameters(parm)
+        request.setLevels(str(level))
+
+        cycles = DataAccessLayer.getAvailableTimes(request, True)
+        times = DataAccessLayer.getAvailableTimes(request)
+        fcstRun = DataAccessLayer.getForecastRun(cycles[-1], times)
+        response = DataAccessLayer.getGridData(request, [fcstRun[-1]])
+        grid = response[0]
+        data = grid.getRawData()
+        lons, lats = grid.getLatLonCoords()
+        bbox = [lons.min(), lons.max(), lats.min(), lats.max()]
+
+        def make_map(bbox, projection=ccrs.PlateCarree()):
+            fig, ax = plt.subplots(subplot_kw=dict(projection=projection))
+            fig.tight_layout()
+            ax.set_extent(bbox)
+            ax.coastlines(resolution='50m')
+            gl = ax.gridlines(draw_labels=True)
+            gl.xlabels_top = gl.ylabels_right = False
+            gl.xformatter = LONGITUDE_FORMATTER
+            gl.yformatter = LATITUDE_FORMATTER
+            return fig, ax
+
+        fig, ax = make_map(bbox=bbox)
+        cs = ax.pcolormesh(lons, lats, data, cmap=plt.get_cmap('rainbow'))
+        cbar = fig.colorbar(cs, extend='both', shrink=0.5, orientation='horizontal')
+        cbar.set_label(str(grid.getLocationName()) +" " \
+                + str(grid.getLevel()) + " " \
+                + str(grid.getParameter()) + " " \
+                + "(" + str(grid.getUnit()) + ") " \
+                + " valid " + str(grid.getDataTime().getRefTime()) )
+
+        # Write image
+        format = "png"
+        sio = cStringIO.StringIO()
+        plt.savefig(sio, format=format)
+        print "Content-Type: image/%s\n" % format
+        sys.stdout.write(sio.getvalue())
+        cartopyImage = '<img style="border: 0;" src="data:image/png;base64,'+sio.getvalue().encode("base64").strip()+'"/>'
+
         renderHtml =  """
                 <script type="text/javascript">
                     var createGeoJSON = function(){
-                        /*
-                         * leaflet data rendering
-                         */
 
-                        getGeoJSON('/api?name=RAP40&parm=T&level=0.0SFC',function(response) {
+                        getGeoJSON('/api?name="""+name+"""&parm=T&level=0.0SFC',function(response) {
                             var json = response.json;
                             var container = document.getElementById('dsmap');
                             var maps = mapConfig(colormaps, container);
                             maps.jsonMap.drawImage(json, response.json.metadata);
-                        });
+                        })
 
-
-                        getGeoJSONBounds('/polygon?name=RAP40',function(response) {
+                        getGeoJSONBounds('/polygon?name="""+name+"""',function(response) {
                             var coveragePolygon = response.json;
-
-                            /* simple google map */
-                            //var map = new google.maps.Map(document.getElementById('map'), {
-                            //    zoom: 1,
-                            //    center: {lat: 0, lng: 0}
-                            //});
-                            //map.data.addGeoJson(geoJsonPolygonFeature(coveragePolygon));
-
-                            /* leaflet */
                             var container = document.getElementById('datamap');
                             var polygon =  [geoJsonPolygonFeature(coveragePolygon)] ;
                             var jsonMap = dataMap.map({
@@ -390,11 +464,24 @@ request.setLevels(levels[0])</code></pre>
                                 center: {lat: 40, lng: -105}
                             }).init().drawPolygon(polygon).zoomToBounds(polygon);
                         });
+
+                        // Remapped (static example)
+                        var json = response_json;
+                        json.values = json.values.map(function(d, i) {
+                            return d.map(function(b) {
+                                if (b === -999) {return null;}
+                                return b
+                            });
+                        });
+                        json.uniqueValues = unique(json.values).sort();
+                        var container = document.getElementById('remapped');
+                        var maps = mapConfig(colormaps, container);
+                        maps.jsonMap.drawImage(json, response_json.metadata);
                     }
                 </script>
                 <h1>Building a GeoJSON API with python-awips and CherryPy</h1>
 
-<p>Using a DataAccessLayer <a target='_blank' href='http://python-awips.readthedocs.io/en/latest/api/IDataRequest.html'>newDataRequest()</a> to request a grid feild (RAP 40 surface temperature) we can interpolate to a regularly-spaced coordinate grid using Matplotlib, returned as a JSON object.</p>
+<p>Using a DataAccessLayer <a target='_blank' href='http://python-awips.readthedocs.io/en/latest/api/IDataRequest.html'>newDataRequest()</a> to request a grid feild ("""+name+""" surface temperature) we can interpolate to a regularly-spaced coordinate grid using Matplotlib, returned as a JSON object.</p>
 
 <pre class='small'><code>   from awips.dataaccess import DataAccessLayer
    import json
@@ -402,12 +489,12 @@ request.setLevels(levels[0])</code></pre>
    class Edex:
 
        @cherrypy.expose
-       def api(self, name="", parm="", level=""):
+       def api(self, name=""""+name+"""", parm="T", level="0.0SFC"):
            request = DataAccessLayer.newDataRequest()
            request.setDatatype("grid")
-           request.setLocationNames("RAP40")
-           request.setParameters("T")
-           request.setLevels("0.0SFC")
+           request.setLocationNames(name)
+           request.setParameters(parm)
+           request.setLevels(str(level))
            cycles = DataAccessLayer.getAvailableTimes(request, True)
            times = DataAccessLayer.getAvailableTimes(request)
            fcstRun = DataAccessLayer.getForecastRun(cycles[-1], times)
@@ -440,33 +527,79 @@ request.setLevels(levels[0])</code></pre>
            cherrypy.quickstart(Edex(), '/', config=server_config)</code></pre>
 
 
-        <p>The function <code>Edex.api()</code> allows for grid names, parameters, and levels to be to be passed from location.href (e.g. <a href='/api?name=RAP40&parm=T&level=0.0SFC'>/api?name=RAP40&parm=T&level=0.0SFC</a>).</p>
 
 
-        <h2>Rendering 2D Grid Fields with Leaflet</h3>
+        <div class="ui segment">
+            <h2>Render Native (Irregular) Grid w Leaflet</h2>
+            <div id="dsmap"></div>
 
-        <div id="dsmap"></div>
+            <p><a href='/api?name="""+name+"""&parm="""+parm+"""&level=0.0SFC'>/api?name="""+name+"""&parm="""+parm+"""&level=0.0SFC</a></p>
 
-        <pre class='small'><code>    &lt;link rel="stylesheet" type="text/css" href="/css/leaflet.css" /&gt;
-    &lt;script src="https://d3js.org/d3.v4.min.js"&gt;&lt;/script&gt;
-    &lt;script src="/js/leaflet.js"&gt;&lt;/script&gt;
-    &lt;script src="/js/python-awips.js"&gt;&lt;/script&gt;
-    &lt;script async defer src="https://maps.googleapis.com/maps/api/js?key=API_KEY"&gt;&lt;/script&gt;
-    &lt;script type="text/javascript"&gt;
-        $(document).ready(function(){
-            getGeoJSON('/api?name=RAP40&parm=T&level=0.0SFC',function(response) {
-                var json = response.json;
-                var container = document.getElementById('dsmap');
-                var maps = mapConfig(colormaps, container);
-                maps.jsonMap.drawImage(json, response.json.metadata);
-            });
-        });
-    &lt;/script&gt;
+        </div>
+
+
+        <div class="ui segment">
+            <h2>Render Remapped Grid w Leaflet</h2>
+            <div id="remapped"></div>
+
+            <p><a href='/remapped?name="""+name+"""&parm="""+parm+"""&level=0.0SFC'>/remapped?name="""+name+"""&parm="""+parm+"""&level=0.0SFC</a></p>
+
+        </div>
+
+        <div class="ui segment">
+            <h2>Render w Cartopy and Matplotlib</h2>
+            <div id="cartopy">""" + cartopyImage + """</div>
+
+            <pre><code>
+    import cartopy.crs as ccrs
+    import matplotlib.pyplot as plt
+    from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+    import numpy as np
+
+    DataAccessLayer.changeEDEXHost("edex-cloud.unidata.ucar.edu")
+    request = DataAccessLayer.newDataRequest()
+    request.setDatatype("grid")
+    request.setLocationNames("RAP40")
+    request.setParameters("T")
+    request.setLevels("0.0SFC")
+
+    cycles = DataAccessLayer.getAvailableTimes(request, True)
+    times = DataAccessLayer.getAvailableTimes(request)
+    fcstRun = DataAccessLayer.getForecastRun(cycles[-1], times)
+    response = DataAccessLayer.getGridData(request, [fcstRun[-1]])
+    grid = response[0]
+    data = grid.getRawData()
+    lons, lats = grid.getLatLonCoords()
+    bbox = [lons.min(), lons.max(), lats.min(), lats.max()]
+
+    def make_map(bbox, projection=ccrs.PlateCarree()):
+        fig, ax = plt.subplots(subplot_kw=dict(projection=projection))
+        fig.tight_layout()
+        ax.set_extent(bbox)
+        ax.coastlines(resolution='50m')
+        gl = ax.gridlines(draw_labels=True)
+        gl.xlabels_top = gl.ylabels_right = False
+        gl.xformatter = LONGITUDE_FORMATTER
+        gl.yformatter = LATITUDE_FORMATTER
+        return fig, ax
+
+    fig, ax = make_map(bbox=bbox)
+    cs = ax.pcolormesh(lons, lats, data, cmap=plt.get_cmap('rainbow'))
+    cbar = fig.colorbar(cs, extend='both', shrink=0.5, orientation='horizontal')
+    cbar.set_label(str(grid.getLocationName()) +" " \\
+        + str(grid.getLevel()) + " " \\
+        + str(grid.getParameter()) + " " \\
+        + "(" + str(grid.getUnit()) + ") " \\
+        + " valid " + str(grid.getDataTime().getRefTime()) )
+    plt.show()
     </code></pre>
+        </div>
+
+
 
 
      <h2>Leaflet Bounding Box Overlay</h2>
-
+        <div class="ui segment">
                 <h3>1) Using Psycopg2 and json.dumps</h3>
 
                 <pre class='small'><code>    conn = None
@@ -474,7 +607,7 @@ request.setLevels(levels[0])</code></pre>
             conn = psycopg2.connect("dbname = 'metadata' user = 'awips' host = 'localhost' password='awips'")
             cur = conn.cursor()
             cur.execute("select * from gridcoverage where id = "
-                        "(select distinct location_id from grid_info where datasetid = 'RAP40');")
+                        "(select distinct location_id from grid_info where datasetid = '"""+name+"""');")
             columns = ('dtype', 'id', 'crs', 'dx', 'dy', 'firstgridpointcorner', 'the_geom',
                 'la1', 'lo1', 'name', 'nx', 'ny', 'spacingunit', 'latin1', 'latin2', 'lov',
                 'majoraxis', 'minoraxis', 'la2', 'latin', 'lo2', 'lad')
@@ -510,13 +643,14 @@ request.setLevels(levels[0])</code></pre>
       }
    ]
             </code></pre>
-
+        </div>
+        <div class="ui segment">
                 <h3>2) Simple bounds using <b>ST_AsGeoJSON</b></h3>
 
                 <pre class='small'><code>    SELECT ST_AsGeoJSON(the_geom) from gridcoverage
     where id = (select distinct location_id
                 from grid_info
-                where datasetid = 'RAP40');</code></pre>
+                where datasetid = '"""+name+"""');</code></pre>
 
                 Result:
 
@@ -530,6 +664,7 @@ request.setLevels(levels[0])</code></pre>
             [-126.277996616516,16.0628879526408]
         ]]
     }</code></pre>
+        </div>
 
                 <div id="datamap"></div>"""
 
@@ -717,7 +852,7 @@ def createpage(name, parm, level, time, mainContent, sideContent, parmlist):
                         <a class="toc item">
                           <i class="sidebar icon"></i>
                         </a>
-                        <a class="active item" href="/">AWIPS Data Portal</a>
+                        <a class="item" href="/">AWIPS Data Portal</a>
                         <a class="item" href="/#api">Python API</a>
                         <a class="item" href="/geojson">GeoJSON</a>
                     </div>
@@ -818,6 +953,7 @@ def getHeader():
         <script src="/js/leaflet-idw.js"></script>
         <script src="/js/parms.js"></script>
         <script src="/js/python-awips.js"></script>
+        <script src="/js/remapped.js"></script>
 
         <script async defer
             src="https://maps.googleapis.com/maps/api/js?key=AIzaSyArPg5g3tDauQ2g-bu0cyqv7oqgiKqtiz4">
@@ -975,7 +1111,7 @@ DataAccessLayer.changeEDEXHost(<span class="hljs-string">"edex-cloud.unidata.uca
 request = DataAccessLayer.newDataRequest()
 request.setDatatype(<span class="hljs-string">"grid"</span>)
 
-request.setLocationNames(<span class="hljs-string">"RAP40"</span>)
+request.setLocationNames(<span class="hljs-string">""""+name+""""</span>)
 request.setParameters(<span class="hljs-string">"T"</span>)
 request.setLevels(<span class="hljs-string">"0.0SFC"</span>)
 

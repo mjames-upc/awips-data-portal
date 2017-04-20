@@ -39,6 +39,8 @@
 #map { height:400px;width:100%;}
 #datamap { height:400px;width:100%;}
 #dsmap { height:400px;width:100%;}
+#remapped { height:400px;width:100%;}
+#cartopy { width:100%;}
 .preview-legend { height:60px;width:100%;}
 .spatial-coverage-map svg .countries,
 .map svg .countries,

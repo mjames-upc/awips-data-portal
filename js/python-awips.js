@@ -25,6 +25,9 @@ window.addEventListener("load", function(event) {
         return false;
     });
     createGeoJSON();
+
+
+
 });
 
 var temperatureColorScale = ['#ffffff', '#28394b', '#3a5775', '#4ca4bd', '#6bd1cb', '#73bf4d', '#91e447', '#edde34', '#dea942', '#b76534', '#893333', '#4f0138'];
@@ -54,16 +57,18 @@ var dataMap = (function() {
         var map = null;
         var overlay = null;
         var previous = null;
+        var prevmeta = null;
         var canvas = L.DomUtil.create('canvas', 'data-map');
         canvas.style.display = 'none';
         document.body.appendChild(canvas);
         var layerData = {};
-        layerData.render = function(_data) {
+        layerData.render = function(_data,_metadata) {
             var data = _data || previous;
+            console.log(data);
+            var meta = _metadata || prevmeta;
             previous = data;
-            if (!data) {
-                return layerData;
-            }
+            prevmeta = meta;
+            if (!data) return layerData;
             var bounds = map.getBounds();
             var size = map.getSize();
             if (map.getPixelOrigin().y < 0) {
@@ -76,70 +81,162 @@ var dataMap = (function() {
             canvas.height = size.y;
             var ctx = canvas.getContext('2d');
             ctx.globalAlpha = 0.5;
-            var numlon = lon.length; // 151
-            var numlat = lon[0].length; // 113
-            //debugger;
-            //var points = new Array();
-            //for (var i = 0; i < lat.length; i++) {
-            //    for (var j = 0; j < lat[i].length; j++) {
-            //        var ptArray = new Array(lat[i][j],lon[i][j],values[i][j])
-            //        points.push(ptArray);
-            //    }
-            //}
-            //var heat = L.heatLayer(points).addTo(map);
 
 
-            //console.log(lat[0][0] + "," + lon[0][0]); // TOP RIGHT
-            //console.log(lat[numlon-1][0] + "," + lon[numlon-1][0]); // TOP LEFT
-            //console.log(lat[0][numlat-1] + "," + lon[0][numlat-1]); // BOTTOM RIGHT
-            //console.log(lat[numlon-1][numlat-1] + "," + lon[numlon-1][numlat-1]); // BOTTOM LEFT
+            function arraysEqual(a, b) {
+                if (a === b) return true;
+                if (a == null || b == null) return false;
+                if (a.length != b.length) return false;
+                // If you don't care about the order of the elements inside
+                // the array, you should sort both arrays here.
+                for (var i = 0; i < a.length; ++i) {
+                    if (a[i] !== b[i]) return false;
+                }
+                return true;
+            }
 
-            var nwPoint = map.latLngToContainerPoint(L.latLng(lat[numlon-1][0], lon[numlon-1][0]));
-            var nwPointNextLon = map.latLngToContainerPoint(L.latLng(lat[numlon-2][0], lon[numlon-2][0]));
-            var w = Math.ceil(Math.max(nwPointNextLon.x - nwPoint.x, 1)) + 2;
-            var image = ctx.getImageData(0, 0, size.x, size.y);
-            var buf = new ArrayBuffer(image.data.length);
-            var buf8 = new Uint8ClampedArray(buf);
-            var data = new Uint32Array(buf);
-            var colorInt, imgIndex, x, y;
-            var point, value, latIndex, nextLatIndex, lonIndex;
+            if (meta.projection == "native") {
 
-            var idwData = [];
+                if (arraysEqual(lat[0],lat[1])) {
+                    var nlat = lat[0];
+                    var nlon = lon.map(function(value,index) { return value[2]; });
+                    var numlon = nlon.length;
+                    var numlat = nlat.length;
+                    var ni = Math.max(utils.bisectionReversed(nlat, bounds.getNorth()) - 1, 0);
+                    var si = Math.min(utils.bisectionReversed(nlat, bounds.getSouth()) + 1, numlat - 1);
+                    var wi = Math.max(utils.bisection(nlon, bounds.getWest()) - 1, 0);
+                    var ei = Math.min(utils.bisection(nlon, bounds.getEast()) + 1, numlon - 1);
+                    var nwPoint = map.latLngToContainerPoint(L.latLng(nlat[0], nlon[0]));
+                    var nwPointNextLon = map.latLngToContainerPoint(L.latLng(nlat[0], nlon[1]));
+                    console.log(nwPointNextLon.x);
+                    console.log(nwPoint.x);
+                    console.log(nwPointNextLon.x - nwPoint.x);
+                    console.log(Math.max(nwPointNextLon.x - nwPoint.x, 1));
+                    var w = Math.ceil(Math.max(nwPointNextLon.x - nwPoint.x, 1)) + 2;
+                    var image = ctx.getImageData(0, 0, size.x, size.y);
+                    var buf = new ArrayBuffer(image.data.length);
+                    var buf8 = new Uint8ClampedArray(buf);
+                    var data = new Uint32Array(buf);
+                    var colorInt, imgIndex, x, y;
+                    var point, value, li, nli;
+                    for (var i = 0; i < numlat; i++) {
+                        li = Math.max(i, 0);
+                        nli = Math.min(li + 1, numlat - 1);
+                        var firstLat = map.latLngToContainerPoint(L.latLng(nlat[li], nlon[wi]));
+                        var nextLat = map.latLngToContainerPoint(L.latLng(nlat[nli], nlon[wi]));
+                        var h = Math.ceil(Math.max(nextLat.y - firstLat.y, 1) + 1);
+                        for (var j = 0; j < numlon-1; j++) {
+                            point = map.latLngToContainerPoint(L.latLng(nlat[i], nlon[j]));
+                            if (map.getPixelOrigin().y < 0) {
+                                point.y = point.y + map.getPixelOrigin().y;
+                            }
+                            value = values[j][i];
+                            if (value !== -999 && value !== null && !isNaN(value) && i % 1 === 0 && j % 1 === 0) {
+                                var colorHex = utils.rgb2hex(colormap(value)).substring(1);
+                                colorInt = parseInt(colorHex, 16);
+                                for (x = 0; x < w; x++) {
+                                    for (y = 0; y < h; y++) {
+                                        imgIndex = (~~point.y + y - ~~(h / 2)) * size.x + Math.min(Math.max(~~point.x + x - ~~(w / 2), 0), size.x - 1);
+                                        data[imgIndex] = (255 << 24) | (colorInt << 16) | (((colorInt >> 8) & 255) << 8) | (colorInt >> 16) & 255;
+                                    }
+                                }
 
-            for (var i = 0; i < numlat; i++) {
-                latIndex = Math.max(i, 0);
-                nextLatIndex = Math.min(latIndex + 1, numlat - 1);
-                for (var j = 0; j < numlon; j++) {
-                    idwData.push([lat[j][i],lon[j][i],values[j][i]]);
-                    //var firstPointAtCurrentLat = map.latLngToContainerPoint(L.latLng(lat[i][j], lon[i][j]));
-                    //console.log(lat[i][j], lon[i][j]);
-                    var firstPointAtCurrentLat = map.latLngToContainerPoint(L.latLng(lat[j][i], lon[j][i]));
-                    var firstPointAtNextLat = map.latLngToContainerPoint(L.latLng(lat[j][nextLatIndex], lon[j][i]));
-                    var h = Math.ceil(Math.max(firstPointAtNextLat.y - firstPointAtCurrentLat.y, 1) + 1);
-                    //if (w > 3) console.log(w+","+h);
-                    point = map.latLngToContainerPoint(L.latLng(lat[j][i], lon[j][i]));
-                    if (map.getPixelOrigin().y < 0) {
-                        point.y = point.y + map.getPixelOrigin().y;
-                    }
-                    value = values[j][i];
-                    if (value !== -999 && value !== null && !isNaN(value) && i % 1 === 0 && j % 1 === 0) {
-                        var colorHex = utils.rgb2hex(colormap(value)).substring(1);
-                        colorInt = parseInt(colorHex, 16);
-
-                        for (x = 0; x < w; x++) {
-                            for (y = 0; y < h; y++) {
-                                imgIndex = (~~point.y + y - ~~(h / 2)) * size.x + Math.min(Math.max(~~point.x + x - ~~(w / 2), 0), size.x - 1);
-                                data[imgIndex] = (255 << 24) | (colorInt << 16) | (((colorInt >> 8) & 255) << 8) | (colorInt >> 16) & 255;
                             }
                         }
+                    }
+                } else {
+                    //console.log(lat[0][0] + "," + lon[0][0]); // TOP RIGHT
+                    //console.log(lat[numlon-1][0] + "," + lon[numlon-1][0]); // TOP LEFT
+                    //console.log(lat[0][numlat-1] + "," + lon[0][numlat-1]); // BOTTOM RIGHT
+                    //console.log(lat[numlon-1][numlat-1] + "," + lon[numlon-1][numlat-1]); // BOTTOM LEFT
+                    var numlon = lon.length;
+                    var numlat = lon[0].length;
+                    var nwPoint = map.latLngToContainerPoint(L.latLng(lat[numlon - 1][0], lon[numlon - 1][0]));
+                    var nwPointNextLon = map.latLngToContainerPoint(L.latLng(lat[numlon - 2][0], lon[numlon - 2][0]));
+                    var w = Math.ceil(Math.max(nwPointNextLon.x - nwPoint.x, 1)) + 2;
+                    var image = ctx.getImageData(0, 0, size.x, size.y);
+                    var buf = new ArrayBuffer(image.data.length);
+                    var buf8 = new Uint8ClampedArray(buf);
+                    var data = new Uint32Array(buf);
+                    var colorInt, imgIndex, x, y;
+                    var point, value, li, nli;
+                    //var idwData = [];
+                    for (var i = 0; i < numlat; i++) {
+                        li = Math.max(i, 0);
+                        nli = Math.min(li + 1, numlat - 1);
+                        for (var j = 0; j < numlon; j++) {
+                            //idwData.push([lat[j][i], lon[j][i], values[j][i]]);
+                            var firstLat = map.latLngToContainerPoint(L.latLng(lat[j][i], lon[j][i]));
+                            var nextLat = map.latLngToContainerPoint(L.latLng(lat[j][nli], lon[j][i]));
+                            var h = Math.ceil(Math.max(nextLat.y - firstLat.y, 1) + 1);
+                            point = map.latLngToContainerPoint(L.latLng(lat[j][i], lon[j][i]));
+                            if (map.getPixelOrigin().y < 0) {
+                                point.y = point.y + map.getPixelOrigin().y;
+                            }
+                            value = values[j][i];
+                            if (value !== -999 && value !== null && !isNaN(value) && i % 1 === 0 && j % 1 === 0) {
+                                var colorHex = utils.rgb2hex(colormap(value)).substring(1);
+                                colorInt = parseInt(colorHex, 16);
+                                for (x = 0; x < w; x++) {
+                                    for (y = 0; y < h; y++) {
+                                        imgIndex = (~~point.y + y - ~~(h / 2)) * size.x + Math.min(Math.max(~~point.x + x - ~~(w / 2), 0), size.x - 1);
+                                        data[imgIndex] = (255 << 24) | (colorInt << 16) | (((colorInt >> 8) & 255) << 8) | (colorInt >> 16) & 255;
+                                    }
+                                }
 
+                            }
+                        }
                     }
                 }
+            } else {
+                var ni = Math.max(utils.bisectionReversed(lat, bounds.getNorth()) - 1, 0);
+                var si = Math.min(utils.bisectionReversed(lat, bounds.getSouth()) + 1, lat.length - 1);
+                var wi = Math.max(utils.bisection(lon, bounds.getWest()) - 1, 0);
+                var ei = Math.min(utils.bisection(lon, bounds.getEast()) + 1, lon.length - 1);
+                var nwp = map.latLngToContainerPoint(L.latLng(lat[ni], lon[Math.max(wi, 0)]));
+                var nextLng = map.latLngToContainerPoint(L.latLng(lat[ni], lon[Math.min(wi + 1, lon.length - 1)]));
+                var w = Math.ceil(Math.max(nextLng.x - nwp.x, 1)) + 2;
+                var image = ctx.getImageData(0, 0, size.x, size.y);
+                var buf = new ArrayBuffer(image.data.length);
+                var buf8 = new Uint8ClampedArray(buf);
+                var data = new Uint32Array(buf);
+                var colorInt, img, x, y;
+                var point, value, li, nli, loni;
+                for (var i = 0; i < lat.length; i++) {
+                    if (i < ni || i >= si) {
+                        continue;
+                    }
+                    li = Math.max(i, 0);
+                    nli = Math.min(li + 1, lat.length - 1);
+                    var firstLat = map.latLngToContainerPoint(L.latLng(lat[li], lon[wi]));
+                    var nextLat = map.latLngToContainerPoint(L.latLng(lat[nli], lon[wi]));
+                    var h = Math.ceil(Math.max(nextLat.y - firstLat.y, 1) + 1);
+                    for (var j = 0; j < lon.length; j++) {
+                        if (j >= wi && j < ei) {
+                            loni = Math.max(j, 0);
+                            point = map.latLngToContainerPoint(L.latLng(lat[li], lon[loni]));
+                            if (map.getPixelOrigin().y < 0) {
+                                point.y = point.y + map.getPixelOrigin().y;
+                            }
+                            value = values[li][loni];
+                            if (value !== -999 && value !== null && !isNaN(value) && i % 1 === 0 && j % 1 === 0) {
+                                var colorHex = utils.rgb2hex(colormap(value)).substring(1);
+                                colorInt = parseInt(colorHex, 16);
+                                for (x = 0; x < w; x++) {
+                                    for (y = 0; y < h; y++) {
+                                        img = (~~point.y + y - ~~(h / 2)) * size.x + Math.min(Math.max(~~point.x + x - ~~(w / 2), 0), size.x - 1);
+                                        data[img] = (255 << 24) | (colorInt << 16) | (((colorInt >> 8) & 255) << 8) | (colorInt >> 16) & 255;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
             }
             //var idw = JSON.stringify(idwData);
             //console.log("[[" + idwData.join("],[") + "]]");
             //var idw = L.idwLayer("[[" + idwData.join("],[") + "]]", {opacity: 0.3, cellSize: 10, exp: 2, max: 350}).addTo(map);
-
 
             image.data.set(buf8);
             ctx.putImageData(image, 0, 0);
@@ -155,8 +252,8 @@ var dataMap = (function() {
             colormap = _colormap;
             return layerData;
         };
-        layerData.setData = function(data) {
-            layerData.render(data);
+        layerData.setData = function(data,metadata) {
+            layerData.render(data,metadata);
             return layerData;
         };
         layerData.addTo = function(_map) {
@@ -171,7 +268,7 @@ var dataMap = (function() {
                         imgNodeStyle.transform = 'translate(' + xy + ')';
                     }
                 }
-                if (map.getZoom() < 6) layerData.render();
+                layerData.render();
             });
             return layerData;
         };
@@ -224,38 +321,49 @@ var dataMap = (function() {
                     var numlat = gridData.lons[0].length;
                     var closest = {};
                     closest.distance = 9999999;
-                    for (var i = 0; i < numlat; i++){
-                        for (var j = 0; j < numlon; j++) {
-                            var comp = utils.distance(e.latlng.lat,e.latlng.lng,gridData.lats[j][i],gridData.lons[j][i]);
-                            if (comp < closest.distance){
-                                closest.distance = comp;
-                                closest.i = i;
-                                closest.j = j;
+                    if (numlat > 1) {
+                        for (var i = 0; i < numlat; i++) {
+                            for (var j = 0; j < numlon; j++) {
+                                var comp = utils.distance(e.latlng.lat, e.latlng.lng, gridData.lats[j][i], gridData.lons[j][i]);
+                                if (comp < closest.distance) {
+                                    closest.distance = comp;
+                                    closest.i = i;
+                                    closest.j = j;
+                                }
                             }
                         }
-                    }
-                    //console.log(e.latlng.lat,e.latlng.lng);
-                    //console.log(closest.i ,closest.j, closest.distance);
-                    //console.log(gridData.lats[closest.j][closest.i],gridData.lons[closest.j][closest.i]);
-                    //var latIndex = utils.bisectionReversed(gridData.lats[0], e.latlng.lat);
-                    //var lonIndex = utils.bisection(gridData.lons[0], e.latlng.lng);
-                    //var pLatIndex = Math.max(latIndex - 1, 0);
-                    //var deltaLat = gridData.lats[0][pLatIndex] - gridData.lats[0][latIndex];
-                    //if (e.latlng.lat > gridData.lats[0][latIndex] + deltaLat / 2) {
-                    //    latIndex = pLatIndex;
-                    //}
-                    //var pLonIndex = Math.max(lonIndex - 1, 0);
-                    //var deltaLon = gridData.lons[0][lonIndex] - gridData.lons[0][pLonIndex];
-                    //if (e.latlng.lng < gridData.lons[0][lonIndex] - deltaLon / 2) {
-                    //    lonIndex = pLonIndex;
-                    //}
-                    var value = gridData.values[closest.j][closest.i];
-                    if (closest.distance < 30000 && value !== null && value !== -999) {
-                        var formattedValue = L.Util.formatNum(value, 2);
-                        tooltip.setTooltipContent(formattedValue + '').openTooltip([e.latlng.lat, e.latlng.lng]);
+                        var value = gridData.values[closest.j][closest.i];
+                        if (closest.distance < 30000 && value !== null && value !== -999) {
+                            var formattedValue = L.Util.formatNum(value, 2);
+                            tooltip.setTooltipContent(formattedValue + '').openTooltip([e.latlng.lat, e.latlng.lng]);
+                        } else {
+                            tooltip.closeTooltip();
+                        }
                     } else {
-                        tooltip.closeTooltip();
+                        var li = utils.bisectionReversed(gridData.lats, e.latlng.lat);
+                        var loni = utils.bisection(gridData.lons, e.latlng.lng);
+                        var previousLatIndex = Math.max(li - 1, 0);
+                        var deltaLat = gridData.lats[previousLatIndex] - gridData.lats[li];
+                        if (e.latlng.lat > gridData.lats[li] + deltaLat / 2) {
+                            li = previousLatIndex;
+                        }
+                        var previousLonIndex = Math.max(loni - 1, 0);
+                        var deltaLon = gridData.lons[loni] - gridData.lons[previousLonIndex];
+                        if (e.latlng.lng < gridData.lons[loni] - deltaLon / 2) {
+                            loni = previousLonIndex;
+                        }
+                        var value = null;
+                        if (e.latlng.lat <= gridData.lats[0] && e.latlng.lat >= gridData.lats[gridData.lats.length - 1] && e.latlng.lng >= gridData.lons[0] && e.latlng.lng <= gridData.lons[gridData.lons.length - 1]) {
+                            value = gridData.values[li][loni];
+                        }
+                        if (value !== null && value !== -999) {
+                            var formattedValue = L.Util.formatNum(value, 2);
+                            tooltip.setTooltipContent(formattedValue + '').openTooltip([e.latlng.lat, e.latlng.lng]);
+                        } else {
+                            tooltip.closeTooltip();
+                        }
                     }
+
                     events.mousemove({
                         x: e.containerPoint.x,
                         y: e.containerPoint.y,
@@ -300,7 +408,7 @@ var dataMap = (function() {
                 return a - b;
             });
             var colormap = config.colormap(dataSorted);
-            grid.setColorMap(colormap).setData(data);
+            grid.setColorMap(colormap).setData(data,metadata);
             var boundBox = metadata.coverage;
             var imageBounds = [[boundBox.latmax, boundBox.lonmin],[boundBox.latmin, boundBox.lonmax]];
             map.fitBounds(imageBounds);
