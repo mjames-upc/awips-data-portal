@@ -72,13 +72,207 @@ class Edex:
 
 
 
+    @cherrypy.expose
+    def radar(self, id="klch", product="32"):
+        from cartopy.feature import ShapelyFeature,NaturalEarthFeature
+        from awips import ThriftClient, RadarCommon
+        from dynamicserialize.dstypes.com.raytheon.uf.common.time import TimeRange
+        from dynamicserialize.dstypes.com.raytheon.uf.common.dataplugin.radar.request import GetRadarDataRecordRequest
+        from datetime import datetime
+        import matplotlib.pyplot as plt
+        from datetime import timedelta
+        from numpy import ma
+        from metpy.plots import ctables
+        import cartopy.crs as ccrs
+        from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
+        request = DataAccessLayer.newDataRequest()
+        request.setDatatype('radar')
+        # locations
+        availableSites = DataAccessLayer.getAvailableLocationNames(request)
+        availableSites.sort()
+        request.setLocationNames(id)
+        # products
+        availableProds = DataAccessLayer.getAvailableParameters(request)
+        availableProds.sort()
+        request.setParameters(str(product))
+
+        availableLevels = DataAccessLayer.getAvailableLevels(request)
+        availableLevels.sort()
+        request.setLevels(availableLevels[0])
+
+        times = DataAccessLayer.getAvailableTimes(request)
+
+        print(str(len(times)) + " scans available")
+        print(str(times[0].getRefTime()) + " to " + str(times[-1].getRefTime()))
+
+        response = DataAccessLayer.getGridData(request, [times[-1]])
+        grid = response[0]
+        data = ma.masked_invalid(grid.getRawData())
+        lons, lats = grid.getLatLonCoords()
+
+        def make_map(bbox, projection=ccrs.PlateCarree()):
+            fig, ax = plt.subplots(figsize=(7, 7),
+                    subplot_kw=dict(projection=projection))
+            ax.set_extent(bbox)
+            ax.coastlines(resolution='50m')
+            gl = ax.gridlines(draw_labels=True)
+            gl.xlabels_top = gl.ylabels_right = False
+            gl.xformatter = LONGITUDE_FORMATTER
+            gl.yformatter = LATITUDE_FORMATTER
+            gl.xlabel_style = {'size': 6}
+            gl.ylabel_style = {'size': 6}
+            return fig, ax
+
+        nexrad = {
+            "N0Q": {
+                'id': 94,
+                'unit': 'dBZ',
+                'name': '0.5 deg Base Reflectivity',
+                'ctable': ['NWSStormClearReflectivity', -20., 0.5],
+                'scale': [-32.0, 94.5],
+                'res': 1000.,
+                'elev': '0.5'},
+            "DHR": {
+                'id': 32,
+                'unit': 'dBZ',
+                'name': '0.5 deg Digital Hybrid Reflectivity',
+                'ctable': ['NWSStormClearReflectivity', -20., 0.5],
+                'scale': [-32.0, 94.5],
+                'res': 1000.,
+                'elev': '0.5'},
+            "N0U": {
+                'id': 99,
+                'unit': 'kts',
+                'name': '0.5 deg Base Velocity',
+                'ctable': ['NWS8bitVel', -100., 1.],
+                'scale': [-100, 100],
+                'res': 250.,
+                'elev': '0.5'},
+            "EET": {
+                'id': 135,
+                'unit': 'kft',
+                'name': 'Enhanced Echo Tops',
+                'ctable': ['NWSEnhancedEchoTops', 2, 1],
+                'scale': [0, 255],
+                'res': 1000.,
+                'elev': '0.0'}
+        }
+        nexrad_info = [kv for kv in nexrad.items() if kv[1]['id'] == int(product)][0]
+        code = nexrad_info[0]
+        bbox = [lons.min(), lons.max(), lats.min(), lats.max()]
+        print(nexrad_info)
+        print(code)
+
+        data = ma.masked_invalid(data)
+
+        ctable = nexrad[code]['ctable'][0]
+        beg = nexrad[code]['ctable'][1]
+        inc = nexrad[code]['ctable'][2]
+        norm, cmap = ctables.registry.get_with_steps(ctable, beg, inc)
+
+        fig, ax = make_map(bbox=bbox)
+        cs = ax.pcolormesh(lons, lats, data, norm=norm, cmap=cmap, vmin=nexrad[code]['scale'][0],
+                           vmax=nexrad[code]['scale'][1])
+        cbar = fig.colorbar(cs, extend='both', shrink=0.85, orientation='horizontal')
+        cbar.set_label(str(id).upper() + " " \
+                       + str(grid.getLevel()) + " " \
+                       + str(grid.getParameter()) \
+                       + " (" + str(grid.getUnit()) + ") " \
+                       + "valid " + str(grid.getDataTime().getRefTime()))
+        political_boundaries = NaturalEarthFeature(category='cultural',
+                                       name='admin_0_boundary_lines_land',
+                                       scale='50m', facecolor='none')
+        states = NaturalEarthFeature(category='cultural',
+                                       name='admin_1_states_provinces_lines',
+                                       scale='50m', facecolor='none')
+        ax.add_feature(political_boundaries, linestyle='-',edgecolor='black')
+        ax.add_feature(states, linestyle='-',edgecolor='black')
+        plt.tight_layout()
+
+        # Write image
+        fformat = "png"
+        sio = cStringIO.StringIO()
+        plt.savefig(sio, format=fformat)
+        print("Content-Type: image/%s\n" % fformat)
+        sys.stdout.write(sio.getvalue())
+        cartopyImage = '<img style="border: 0;" src="data:image/png;base64,'+sio.getvalue().encode("base64").strip()+'"/>'
+
+        # Build Dropdowns
+        prodString = '<table class="ui single line table"><thead><tr><th>Product</th><th>Description</th><th>Unit</th><th>DAF</th></tr></thead>'
+        siteSelect = '<select class="ui select dropdown" id="site-select">'
+        for radarsite in availableSites:
+            siteSelect += '<option value="%s">%s</option>' % (radarsite, radarsite.upper())
+        siteSelect += '</select>'
+        prodMenu = ''
+        prodSelect = '<select class="ui select dropdown" id="prod-select">'
+        for prod in availableProds:
+            if RepresentsInt(prod):
+                idhash = hash(id + prod)
+                prodSelect += '<option value="%s">%s</option>' % (prod, prod)
+                prodActiveClass = ''
+                if prod == product:
+                    prodActiveClass = 'active'
+
+                prodMenu += '<a class="item %s" href="/radar?id=%s&parm=%s"><div class="small ui blue label">%s</div></a>' % (prodActiveClass, id, prod,prod)
+                prodString += '<tr><td><a href="/radar?id='+id+'&product='+ prod +'"><b>' + prod + '</b></a></td>' \
+                    '<td><div class="small ui label"></div></td>' \
+                    '<td><div class="small ui label"></div></td>' \
+                    '<td><a class="showcode circular ui icon basic button" name="'+str(idhash)+'" ' \
+                                'href="/json_radar?id=' + id + '&product=' + prod + '">' \
+                                 '<i class="code icon small"></i></a></td></tr>'
+
+                prodString += '''<tr id="''' + str(idhash) + '''" class="transition hidden"><td colspan=5><div class="ui instructive bottom attached segment">
+    <pre><code class="code xml">request = DataAccessLayer.newDataRequest()
+    request.setDatatype("radar")
+    request.setLocationNames("''' + id + '''")
+    request.setParameters("''' + prod + '''")</code></pre>
+    </div></td></tr>'''
+
+        prodSelect += '</select>'
+        prodString += '</table>'
+
+        # Last Scan
+        dateString = str(times[-1])[0:19]
+        hourdiff = datetime.utcnow() - datetime.strptime(dateString, '%Y-%m-%d %H:%M:%S')
+        hours = hourdiff.seconds / 3600
+        days = hourdiff.days
+        minute = str((hourdiff.seconds - (3600 * hours)) / 60)
+        hourdiff = ''
+        if hours > 0:
+            hourdiff += str(hours) + "hr "
+        hourdiff += str(minute) + "m ago"
+        if days > 1:
+            hourdiff = str(days) + " days ago"
+
+        renderHtml =  """
+                <div class="ui grid three column row">
+                    <div class="left floated column"><h1>"""+ id.upper() + """</h1></div>
+                 </div>
+                <p><b>Last volume scan:</b> """+ dateString + """ (""" + hourdiff + """)</p>
+                <div class="ui divider"></div>
+                <div class="ui two column stackable grid container">
+                    <div class="column align right">"""+ siteSelect +"""</div>
+                    <div class="column align right">"""+ prodSelect +"""</div>
+                </div>
+
+                <div class="ui segment">
+                    <div id="cartopy">""" + cartopyImage + """</div>
+                </div>
+                <div class="ui divider"></div>
+                <h2 class="first">"""+id.upper()+""" Radar Products</h2>
+                <div>"""+ prodString +"""</div>"""
+
+        sideContent = ""
+        stringReturn = createpage(id,str(product),'',str(times[-1]),renderHtml,sideContent,prodMenu)
+        return stringReturn
 
 
 
 
     @cherrypy.expose
     def grid(self, name="RAP40", parm="", level=""):
+
         request = DataAccessLayer.newDataRequest()
         request.setDatatype("grid")
 
@@ -91,11 +285,12 @@ class Edex:
         availableParms = DataAccessLayer.getAvailableParameters(request)
         availableParms.sort()
         if parm == "": parm = availableParms[-1]
-        request.setParameters(parm)
+        request.setParameters(str(parm))
 
         # Grid Levels
         availableLevels = DataAccessLayer.getAvailableLevels(request)
         availableLevels.sort()
+        print(availableLevels)
         if level == "": level = availableLevels[-1]
         request.setLevels(str(level))
 
@@ -104,11 +299,13 @@ class Edex:
         lvlString = ''
         gridSelect = '<select class="ui select dropdown" id="grid-select">'
         for grid in available_grids:
-            if not pattern.match(grid): gridSelect += '<option value="%s">%s</option>' % (grid, grid)
+            grid = grid.decode('utf-8')
+            if not pattern.match(grid): gridSelect += '<option value="'+grid+'">'+grid+'</option>'
         gridSelect += '</select>'
         parmMenu = ''
         parmSelect = '<select class="ui select dropdown" id="parm-select">'
         for gridparm in availableParms:
+            gridparm = gridparm.decode('utf-8')
             parmDescription = ''
             parmUnit = ''
             for item in parm_dict:
@@ -146,7 +343,7 @@ request.setLevels(levels[0])</code></pre>
         parmDescription = ''
         parmUnit = ''
         for item in parm_dict:
-            replaced = re.sub('[0-9]{1,2}hr$', '', parm)
+            replaced = re.sub('[0-9]{1,2}hr$', '', parm.decode('utf-8'))
             if item == replaced:
                 parmDescription = parm_dict[item][0]
                 parmUnit = parm_dict[item][1]
@@ -360,8 +557,8 @@ request.setLevels(levels[0])</code></pre>
             for row in cur.fetchall():
                 results.append(dict(zip(columns, row)))
             coverage = json.dumps(results, indent=2)
-        except psycopg2.DatabaseError, ex:
-            print 'Unable to connect the database: ' + str(ex)
+        except psycopg2.DatabaseError as ex:
+            print('Unable to connect the database: ' + str(ex))
         return coverage
 
 
@@ -383,8 +580,8 @@ request.setLevels(levels[0])</code></pre>
                         "(select distinct location_id from grid_info where datasetid = '" + name + "');")
             recs = cur.fetchall()
             return recs[0]
-        except psycopg2.DatabaseError, ex:
-            print 'Unable to connect the database: ' + str(ex)
+        except psycopg2.DatabaseError as ex:
+            print('Unable to connect the database: ' + str(ex))
 
 
 
@@ -439,7 +636,7 @@ request.setLevels(levels[0])</code></pre>
         format = "png"
         sio = cStringIO.StringIO()
         plt.savefig(sio, format=format)
-        print "Content-Type: image/%s\n" % format
+        print("Content-Type: image/%s\n" % format)
         sys.stdout.write(sio.getvalue())
         cartopyImage = '<img style="border: 0;" src="data:image/png;base64,'+sio.getvalue().encode("base64").strip()+'"/>'
 
@@ -520,7 +717,7 @@ request.setLevels(levels[0])</code></pre>
 
 
        if __name__ == '__main__':
-           DataAccessLayer.changeEDEXHost("edex.westus.cloudapp.azure.com")
+           DataAccessLayer.changeEDEXHost("edex-cloud.unidata.ucar.edu")
            from cherrypy.process.plugins import Daemonizer
            d = Daemonizer(cherrypy.engine)
            d.subscribe()
@@ -789,14 +986,14 @@ def parameterDictionary(availableParms):
     for gridparm in availableParms:
         for item in parm_dict:
             replaced = re.sub('[0-9]{1,2}hr', '', gridparm)
-            if item == replaced and replaced <> previous:
+            if item == replaced and replaced != previous:
                 previous = replaced
                 parmDescription = parm_dict[item][0]
                 javascriptString += "{ name: '"+replaced+"', title: '"+replaced+" - "+parmDescription+"'},"
     javascriptString += '];'
     return javascriptString
 
-def createpage(name, parm, level, time, mainContent, sideContent, parmlist):
+def createpage(name, parmname, level, time, mainContent, sideContent, parmlist):
     #request = DataAccessLayer.newDataRequest()
     #request.setDatatype("grid")
     ## Grid Names
@@ -821,11 +1018,19 @@ def createpage(name, parm, level, time, mainContent, sideContent, parmlist):
                 <script type="text/javascript">
                     $(document).ready(function(){
                         $('#grid-select').val('""" + name + """');
-                        $('#parm-select').val('""" + parm + """');
+                        $('#site-select').val('""" + name + """');
+                        $('#prod-select').val('""" + parmname + """');
+                        $('#parm-select').val('""" + parmname + """');
                         $('#level-select').val('""" + level + """');
                         $('#cycle-select').val('""" + time + """');
                         $("#grid-select").change(function () {
                             location.href = "/grid?name=" + $(this).val();
+                        });
+                        $("#site-select").change(function () {
+                            location.href = "/radar?id=" + $(this).val();
+                        });
+                        $("#prod-select").change(function () {
+                            location.href = "/radar?id=""" + name + """&product=" + $(this).val();
                         });
                         $("#parm-select").change(function () {
                             location.href = "/grid?name=""" + name + """&parm=" + $(this).val();
@@ -841,7 +1046,7 @@ def createpage(name, parm, level, time, mainContent, sideContent, parmlist):
                             */
                         });
                         $("#level-select").change(function () {
-                            location.href = "/grid?name=""" + name + """&parm=""" + parm + """&level=" + $(this).val();
+                            location.href = "/grid?name=""" + name + """&parm=""" + parmname + """&level=" + $(this).val();
                         });
                     });
                 </script>
@@ -855,6 +1060,8 @@ def createpage(name, parm, level, time, mainContent, sideContent, parmlist):
                         <a class="item" href="/">AWIPS Data Portal</a>
                         <a class="item" href="/#api">Python API</a>
                         <a class="item" href="/geojson">GeoJSON</a>
+                        <a class="item" href="/grid">Forecast Models</a>
+                        <a class="item" href="/radar">NEXRAD Radar</a>
                     </div>
                 </div>
             </div>
@@ -937,6 +1144,10 @@ def getHeader():
 
         <title>AWIPS Data Portal</title>
 
+        <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+        <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+        <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+
         <link rel="stylesheet" type="text/css" href="/css/semantic.min.css" />
         <link rel="stylesheet" type="text/css" href="/css/leaflet.css" />
         <link rel="stylesheet" type="text/css" href="/css/style.css" />
@@ -984,6 +1195,14 @@ def createindex():
                     </div>
                 </div>
             </div>
+            <!-- Accent-colored raised button with ripple -->
+<button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">
+  Button
+</button>
+<!-- Colored FAB button -->
+<button class="mdl-button mdl-js-button mdl-button--fab mdl-button--colored">
+  <i class="material-icons">add</i>
+</button>
             <div class="ui text container">
                 <h1 class="ui inverted header">
                     AWIPS Data Portal
@@ -1034,7 +1253,7 @@ def createindex():
                 </div>
                 <div class="row">
                     <div class="twelve wide column ">
-                        <h1 class="ui header">NEXRAD Level 3 Radar</h1>
+                        <h1 class="ui header"><a href="/radar">NEXRAD Level 3 Radar</a></h1>
                         <p>Access and display real-time radar data for 200+ NEXRAD stations and 46 TDWR stations. Access the entire Level 3 product set, including reflectivity, velocity, precipitation, and hydrometeor classification products.</p>
                     </div>
                     <div class="four wide right floated column">
@@ -1162,7 +1381,7 @@ if response.getData():
     dattyp = RadarCommon.get_data_type(azdat)
     az = np.append(az,az[-1])
 
-    print "found",v,record.getDataTime()
+    print("found",v,record.getDataTime())
 
     header = RadarCommon.get_header(record, format, xLen, yLen, azdat, "description")
     rng = np.linspace(0, xLen, xLen + 1)
@@ -1354,10 +1573,19 @@ try:
         </html>
             """
 
+# http://stackoverflow.com/a/1267145/5191979
+def RepresentsInt(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
 
 if __name__ == '__main__':
     pattern = re.compile("^((ECMF|UKMET|QPE|MPE|FFG|GribModel|HFR|RFCqpf|EPAC40))")
-    DataAccessLayer.changeEDEXHost("edex.westus.cloudapp.azure.com")
+    DataAccessLayer.changeEDEXHost("edex-cloud.unidata.ucar.edu")
+    #DataAccessLayer.changeEDEXHost("edextest.unidata.ucar.edu")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     server_config ={
         'global': {

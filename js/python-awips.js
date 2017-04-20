@@ -25,9 +25,6 @@ window.addEventListener("load", function(event) {
         return false;
     });
     createGeoJSON();
-
-
-
 });
 
 var temperatureColorScale = ['#ffffff', '#28394b', '#3a5775', '#4ca4bd', '#6bd1cb', '#73bf4d', '#91e447', '#edde34', '#dea942', '#b76534', '#893333', '#4f0138'];
@@ -136,7 +133,11 @@ var dataMap = (function() {
                                 colorInt = parseInt(colorHex, 16);
                                 for (x = 0; x < w; x++) {
                                     for (y = 0; y < h; y++) {
-                                        imgIndex = (~~point.y + y - ~~(h / 2)) * size.x + Math.min(Math.max(~~point.x + x - ~~(w / 2), 0), size.x - 1);
+                                        //imgIndex =  + Math.min(Math.max(~~point.x + x - ~~(w / 2), 0), size.x - 1);
+                                        var partOne = (Math.floor(point.y) + y - Math.floor(h / 2)) * size.x;
+                                        var partTwo = Math.min(Math.max(~~point.x + x - ~~(w / 2), 0), size.x - 1);
+                                        debugger;
+                                        imgIndex =  partOne + partTwo;
                                         data[imgIndex] = (255 << 24) | (colorInt << 16) | (((colorInt >> 8) & 255) << 8) | (colorInt >> 16) & 255;
                                     }
                                 }
@@ -179,7 +180,12 @@ var dataMap = (function() {
                                 colorInt = parseInt(colorHex, 16);
                                 for (x = 0; x < w; x++) {
                                     for (y = 0; y < h; y++) {
-                                        imgIndex = (~~point.y + y - ~~(h / 2)) * size.x + Math.min(Math.max(~~point.x + x - ~~(w / 2), 0), size.x - 1);
+                                        //imgIndex = (~~point.y + y - ~~(h / 2)) * size.x + Math.min(Math.max(~~point.x + x - ~~(w / 2), 0), size.x - 1);
+                                        //imgIndex =  + Math.min(Math.max(~~point.x + x - ~~(w / 2), 0), size.x - 1);
+                                        var partOne = (Math.floor(point.y) + y - Math.floor(h / 2)) * size.x;
+                                        var partTwo = Math.min(Math.max(~~point.x + x - ~~(w / 2), 0), size.x - 1);
+                                        debugger;
+                                        imgIndex =  partOne + partTwo;
                                         data[imgIndex] = (255 << 24) | (colorInt << 16) | (((colorInt >> 8) & 255) << 8) | (colorInt >> 16) & 255;
                                     }
                                 }
