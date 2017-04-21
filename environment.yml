@@ -1,0 +1,18 @@
+# Create full conda environment for development, including some useful tools
+name: awips-data-portal
+channels:
+  - conda-forge
+dependencies:
+  - python=2.7
+  - numpy
+  - scipy
+  - matplotlib
+  - pint
+  - cartopy
+  - shapely
+  - metpy
+  - cherrypy
+  - jinja2
+  - pip
+  - pip:
+    - python-awips

@@ -11,11 +11,21 @@ import numpy as np
 import re
 from parms import parm_dict, level_dict, grid_dictionary, navigation, nws_subcenters, wmo_centers, ncep_subcenters
 import binascii, struct
+from jinja2 import Environment, FileSystemLoader
+
 
 class Edex:
+    @cherrypy.expose
+    def index(self):
+        tmpl = env.get_template('index.html')
+        return tmpl.render(salutation='Hello', target='World')
+
+
 
     def hash(s):
         return binascii.b2a_base64(struct.pack('i', hash(s)))
+
+
 
     @cherrypy.expose
     def json(self, name="", parm="", level="",time=""):
@@ -56,17 +66,6 @@ class Edex:
         #    results.append(dict(zip(columns, row)))
         #coverage += json.dumps(results, indent=2)
 
-
-
-
-
-
-
-
-
-    @cherrypy.expose
-    def index(self):
-        return createindex()
 
 
 
@@ -290,7 +289,6 @@ class Edex:
         # Grid Levels
         availableLevels = DataAccessLayer.getAvailableLevels(request)
         availableLevels.sort()
-        print(availableLevels)
         if level == "": level = availableLevels[-1]
         request.setLevels(str(level))
 
@@ -980,6 +978,8 @@ request.setLevels("'''+str(llevel)+'''")
 
 
 
+
+
 def parameterDictionary(availableParms):
     javascriptString = 'var parameter_content = ['
     previous = ''
@@ -994,584 +994,16 @@ def parameterDictionary(availableParms):
     return javascriptString
 
 def createpage(name, parmname, level, time, mainContent, sideContent, parmlist):
-    #request = DataAccessLayer.newDataRequest()
-    #request.setDatatype("grid")
-    ## Grid Names
-    #available_grids = DataAccessLayer.getAvailableLocationNames(request)
-    #available_grids.sort()
-    #request.setLocationNames(name)
-    ## Build Dropdown
-    #gridDropdown = """<div class="ui dropdown item" tabindex="0">
-    #                  Grids
-    #                  <i class="dropdown icon"></i>
-    #                  <div class="menu">"""
-    #for grid in available_grids:
-    #    if not pattern.match(grid): gridDropdown += '<div class="item" value="%s">%s</div>' % (grid, grid)
-    #gridDropdown += '</div></div>'
+    tmpl = env.get_template('page.html')
+    return tmpl.render(name=name,
+                       parmname=parmname,
+                       level=level,
+                       time=time,
+                       mainContent=mainContent,
+                       sideContent=sideContent,
+                       parmlist=parmlist
+                       )
 
-    return """
-        <!DOCTYPE html>
-        <html>
-        """ + getHeader() + """
-            <body>
-
-                <script type="text/javascript">
-                    $(document).ready(function(){
-                        $('#grid-select').val('""" + name + """');
-                        $('#site-select').val('""" + name + """');
-                        $('#prod-select').val('""" + parmname + """');
-                        $('#parm-select').val('""" + parmname + """');
-                        $('#level-select').val('""" + level + """');
-                        $('#cycle-select').val('""" + time + """');
-                        $("#grid-select").change(function () {
-                            location.href = "/grid?name=" + $(this).val();
-                        });
-                        $("#site-select").change(function () {
-                            location.href = "/radar?id=" + $(this).val();
-                        });
-                        $("#prod-select").change(function () {
-                            location.href = "/radar?id=""" + name + """&product=" + $(this).val();
-                        });
-                        $("#parm-select").change(function () {
-                            location.href = "/grid?name=""" + name + """&parm=" + $(this).val();
-                            /*
-                            var url = "/api?name="""+name+"""&parm=" + $(this).val();
-			                console.log(url);
-			                getGeoJSON(url,function(response) {
-                                var json = response.json;
-                                var container = document.getElementById('dsmap');
-                                var map = getMapConfig(container);
-                                map.jsonMap.drawImage(json, response.json.metadata);
-                            });
-                            */
-                        });
-                        $("#level-select").change(function () {
-                            location.href = "/grid?name=""" + name + """&parm=""" + parmname + """&level=" + $(this).val();
-                        });
-                    });
-                </script>
-
-            <div class="ui fixed inverted menu">
-                <div class="">
-                    <div class="ui large secondary inverted pointing menu">
-                        <a class="toc item">
-                          <i class="sidebar icon"></i>
-                        </a>
-                        <a class="item" href="/">AWIPS Data Portal</a>
-                        <a class="item" href="/#api">Python API</a>
-                        <a class="item" href="/geojson">GeoJSON</a>
-                        <a class="item" href="/grid">Forecast Models</a>
-                        <a class="item" href="/radar">NEXRAD Radar</a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="ui stackable padded grid">
-                <div class="ten wide column">
-                    <div class="ui search action left icon input">
-                        <i class="search icon"></i>
-                        <input class="prompt" type="text" placeholder="Search Parameters...">
-                        <div id="searchButton" class="ui teal button">Search</div>
-                    </div>
-                    <div class="results"></div>
-
-                    """ + mainContent + """
-                </div>
-                <div class="sidepane six wide column">
-                    <div class="static">
-                        <div class="ui padding vertically divided grid">
-                        """ + sideContent + """
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-                """ + footer() + """
-
-            </body>
-
-        </html>"""
-
-
-def footer():
-    return """
-    <div class="ui inverted vertical footer segment">
-        <div class="ui container">
-            <div class="ui stackable inverted divided equal height stackable grid">
-                <div class="seven wide column">
-                    <h4 class="ui inverted header"></h4>
-                    <a href="https://www.facebook.com/Unidata"><i class="huge facebook icon"></i></a>
-                    <a href="https://twitter.com/Unidata"><i class="huge twitter icon"></i></a>
-                    <a href="https://plus.google.com/105982992127916444326/posts"><i class="huge google plus icon"></i></a>
-                    <a href="http://www.unidata.ucar.edu/blogs/news/feed/entries/atom"><i class="huge rss icon"></i></a>
-                    <a href="http://www.youtube.com/user/unidatanews"><i class="huge youtube play icon"></i></a>
-                </div>
-                <div class="three wide column">
-                    <h4 class="ui inverted header">About</h4>
-                    <div class="ui inverted link list">
-                        <a href="https://www2.ucar.edu/" class="item">UCAR</a>
-                        <a href="http://www.unidata.ucar.edu/" class="item">Unidata Program Center</a>
-                    </div>
-                </div>
-                <div class="three wide column">
-                    <h4 class="ui inverted header">Support</h4>
-                    <div class="ui inverted link list">
-                        <a href="mailto:support-awips@unidata.ucar.edu">support-awips@unidata.ucar.edu</a>
-                        <a href="http://www.unidata.ucar.edu/support/requestSupport.jsp" class="item">Support Requests</a>
-                        <a href="https://github.com/Unidata/awips2/issues" class="item">Report a Bug</a>
-                        <a href="#" class="item">How To Access</a>
-                    </div>
-                </div>
-                <div class="three wide column">
-                    <h4 class="ui inverted header">Documentation</h4>
-                    <div class="ui inverted link list">
-                        <a href="https://unidata.github.io/awips2" class="item">Unidata AWIPS User Manual</a>
-                        <a href="https://python-awips.readthedocs.io" class="item">Python AWIPS API</a>
-                        <a href="/geojson" class="item">GeoJSON AWIPS</a>
-                        <a href="https://metpy.readthedocs.io" class="item">MetPy</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>"""
-
-def getHeader():
-    return """
-    <head>
-        <meta charset="utf-8" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-
-        <title>AWIPS Data Portal</title>
-
-        <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-        <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
-        <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
-
-        <link rel="stylesheet" type="text/css" href="/css/semantic.min.css" />
-        <link rel="stylesheet" type="text/css" href="/css/leaflet.css" />
-        <link rel="stylesheet" type="text/css" href="/css/style.css" />
-
-        <script type="text/javascript" src="/js/jquery-1.11.3.min.js"></script>
-        <script src="https://d3js.org/d3.v4.min.js"></script>
-        <script src="/js/visibility.min.js"></script>
-        <script src="/js/sidebar.min.js"></script>
-        <script src="/js/transition.min.js"></script>
-        <script src="/js/tab.min.js"></script>
-        <script src="/js/semantic.min.js"></script>
-        <script src="/js/leaflet.js"></script>
-        <script src="/js/leaflet-heat.js"></script>
-        <script src="/js/leaflet-idw.js"></script>
-        <script src="/js/parms.js"></script>
-        <script src="/js/python-awips.js"></script>
-        <script src="/js/remapped.js"></script>
-
-        <script async defer
-            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyArPg5g3tDauQ2g-bu0cyqv7oqgiKqtiz4">
-        </script>
-    </head>
-    """
-
-
-# Front Page
-def createindex():
-    return """
-<!DOCTYPE html>
-<html>
-    """ + getHeader() + """
-    <body>
-    <div class="pusher">
-        <div class="ui inverted vertical masthead center aligned segment">
-            <div class="ui container">
-                <div class="ui large secondary inverted pointing menu">
-                    <a class="toc item">
-                        <i class="sidebar icon"></i>
-                    </a>
-                    <a class="active item" href="/">AWIPS</a>
-                    <a class="item" href="/#api">Python API</a>
-                    <a class="item" href=/geojson>GeoJSON</a>
-                    <div class="right item">
-                        <button class="ui button"><a href="https://github.com/Unidata/python-awips/archive/0.9.7.zip"><i class="download icon"></i> python-awips 0.9.7</a></button>
-                    </div>
-                </div>
-            </div>
-            <!-- Accent-colored raised button with ripple -->
-<button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">
-  Button
-</button>
-<!-- Colored FAB button -->
-<button class="mdl-button mdl-js-button mdl-button--fab mdl-button--colored">
-  <i class="material-icons">add</i>
-</button>
-            <div class="ui text container">
-                <h1 class="ui inverted header">
-                    AWIPS Data Portal
-                </h1>
-                <h2>A Python and GeoJSON API for meteorological datasets.</h2>
-
-                <div class="ui search action left icon input">
-                    <i class="search icon"></i>
-                    <input class="prompt" type="text" placeholder="Search Parameters...">
-                    <div id="searchButton" class="ui teal button">Search</div>
-                </div>
-                <div class="results"></div>
-                <h1>
-                    <a href="http://python-awips.readthedocs.io" class="ui inverted teal button">Read The Docs <i class="right arrow icon"></i></a>
-                </h1>
-            </div>
-        </div>
-
-
-
-        <div class="ui vertical stripe segment">
-            <div class="ui middle aligned stackable grid container">
-                <div class="row">
-                    <div class="twelve wide column ">
-                        <h1 class="ui header"><a href="/grid">Forecast Model Output</a></h1>
-                        <p>Query and retrieve numerical forecast models output as two-dimentional Numpy arrays.  Global GFS, North American Model, Rapid Refresh, HRRR, NOAA Storm Surge models, and High Frequency Radar ocean surface wind observations.</p>
-                        <p><a class="ui label" href="/grid?name=GFS">GFS</a>
-                            <a class="ui label" href="/grid?name=NAM12">NAM12</a>
-                            <a class="ui label" href="/grid?name=HRRR">HRRR</a>
-                            <a class="ui label" href="/grid?name=RAP13">RAP13</a>
-                            <a class="ui label" href="/grid?name=WaveWatch">WaveWatch</a>
-                            <a class="ui label" href="/grid?name=NAVGEM">NAVGEM</a>
-                            <a class="small" href="">More</a></p>
-                    </div>
-                    <div class="four wide column">
-                        <a href="/grid"><img src="images/model.png" class="ui small circular image"></a>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="twelve wide column ">
-
-                        <h1 class="ui header">Satellite Imagery</h1>
-                        <p>Access the entire NOAAport satellite image product set, including GOES West & East, UNIWISC composite imagery, FNEXRAD, and GOES Sounder products.</p>
-                    </div>
-                    <div class="four wide right floated column">
-                        <img src="images/satellite.png" class="ui small circular image">
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="twelve wide column ">
-                        <h1 class="ui header"><a href="/radar">NEXRAD Level 3 Radar</a></h1>
-                        <p>Access and display real-time radar data for 200+ NEXRAD stations and 46 TDWR stations. Access the entire Level 3 product set, including reflectivity, velocity, precipitation, and hydrometeor classification products.</p>
-                    </div>
-                    <div class="four wide right floated column">
-                        <img src="images/nexrad_card.png" class="ui small circular image">
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="twelve wide column ">
-                        <h1 class="ui header">Upper Air Observations</h1>
-                        <p>Upper Air soundings for 200+ locations, renderable as Skew-T/Log-P charts with Matplotlib and MetPy.  </p>
-                    </div>
-                    <div class="four wide right floated column">
-                        <img src="images/upperair.png" class="ui small image">
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="twelve wide column ">
-                        <h1 class="ui header">Surface METARs and Synoptic Reports</h1>
-                        <p>METAR obs, Synoptic obs, ACARS, Profiler, Marine obs, AIREP, PIREP, and more.
-
-                        </p>
-                    </div>
-                    <div class="four wide right floated column">
-                        <img src="images/sfcobs.png" class="ui small circular image">
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="twelve wide column ">
-                        <h1 class="ui header">AWIPS Geometries</h1>
-                        <p>Query and render geometric data such as states, counties, zones, hazards, warnings, watch boxes, airmet, and more.</p>
-                    </div>
-                    <div class="four wide right floated column">
-                        <img src="images/nexrad_card.png" class="ui small circular image">
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="center aligned column">
-                        <a class="ui huge button">See All Data Types</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
-    <div class="ui vertical stripe segment">
-        <div class="ui text container">
-
-
-
-
-            <a name="api"></a>
-            <h1 class="ui header">Python API Quick Start</h1>
-            <div style="float:right;text-align:center;">Download<br><button class="ui basic button right floated left aligned"><a href="https://github.com/Unidata/python-awips/archive/0.9.7.zip"><i class="download icon"></i> python-awips 0.9.7</a></button></div>
-            <p>The <a href="https://github.com/Unidata/python-awips" target="_blank">python-awips</a> package provides a data access framework for requesting grid and geometry datasets from an EDEX server.</p>
-
-
-
-            <div class="code-container">
-
-                <div class="ui secondary menu">
-                    <a class="item active" data-tab="grid">grid</a>
-                    <a class="item" data-tab="satellite">satellite</a>
-                    <a class="item" data-tab="radar">radar</a>
-                    <a class="item" data-tab="upperair">upperair</a>
-                    <a class="item" data-tab="modelsounding">modelsounding</a>
-                </div>
-
-                <div class="code-panel">
-                    <div class="ui tab segment active" data-tab="grid">
-
-<pre><code class="hljs python"><span class="hljs-keyword">from</span> awips.dataaccess <span class="hljs-keyword">import</span> DataAccessLayer
-DataAccessLayer.changeEDEXHost(<span class="hljs-string">"edex-cloud.unidata.ucar.edu"</span>)
-
-request = DataAccessLayer.newDataRequest()
-request.setDatatype(<span class="hljs-string">"grid"</span>)
-
-request.setLocationNames(<span class="hljs-string">""""+name+""""</span>)
-request.setParameters(<span class="hljs-string">"T"</span>)
-request.setLevels(<span class="hljs-string">"0.0SFC"</span>)
-
-forecast_times = DataAccessLayer.getAvailableTimes(request)
-response = DataAccessLayer.getGridData(request, forecast_times[-1])
-
-for grid in response:
-    data = grid.getRawData()
-    lons, lats = grid.getLatLonCoords()
-</code></pre>
-
-                    </div>
-                    <div class="ui tab segment" data-tab="satellite">
-
-
-
-                    </div>
-                    <div class="ui tab segment" data-tab="radar">
-<pre><code class="hljs python">from awips.dataaccess import DataAccessLayer
-from awips import ThriftClient, RadarCommon
-
-DataAccessLayer.changeEDEXHost("edex-cloud.unidata.ucar.edu")
-request = DataAccessLayer.newDataRequest()
-request.setDatatype("radar")
-request.setLocationNames("kftg") # Lower-case
-
-datatimes = DataAccessLayer.getAvailableTimes(request)
-
-request = GetRadarDataRecordRequest()
-request.setRadarId("kftg")
-request.setProductCode(94) # DHR
-request.setPrimaryElevationAngle("0.5")
-request.setTimeRange(datatimes[-1].validPeriod) # Get lastest
-
-response = client.sendRequest(request)
-if response.getData():
-    for record in response.getData():
-    idra = record.getHdf5Data()
-    rdat,azdat,depVals,threshVals = RadarCommon.get_hdf5_data(idra)
-    dim = rdat.getDimension()
-    yLen,xLen = rdat.getSizes()
-    array = rdat.getByteData()
-
-    # get data for azimuth angles if we have them.
-    if azdat :
-    azVals = azdat.getFloatData()
-    az = np.array(RadarCommon.encode_radial(azVals))
-    dattyp = RadarCommon.get_data_type(azdat)
-    az = np.append(az,az[-1])
-
-    print("found",v,record.getDataTime())
-
-    header = RadarCommon.get_header(record, format, xLen, yLen, azdat, "description")
-    rng = np.linspace(0, xLen, xLen + 1)
-    xlocs = rng * np.sin(np.deg2rad(az[:, np.newaxis]))
-    ylocs = rng * np.cos(np.deg2rad(az[:, np.newaxis]))
-    multiArray = np.reshape(array, (-1, xLen))
-    data = ma.array(multiArray)
-    data[data==0] = ma.masked</code></pre>
-
-                    </div>
-                    <div class="ui tab segment" data-tab="upperair">
-<pre><code class="hljs python">from awips.dataaccess import DataAccessLayer
-DataAccessLayer.changeEDEXHost("edex-cloud.unidata.ucar.edu")
-
-request = DataAccessLayer.newDataRequest()
-request.setDatatype("bufrua")
-request.setLocationNames("72562") # Set station ID, not name
-
-# Mandatory and Significant Temperature level parameters
-MAN_PARAMS = set(['prMan', 'htMan', 'tpMan', 'tdMan', 'wdMan', 'wsMan'])
-SIGT_PARAMS = set(['prSigT', 'tpSigT', 'tdSigT'])
-
-request.setParameters("wmoStaNum", "validTime", "rptType", "staElev", "numMand",
-"numSigT", "numSigW", "numTrop", "numMwnd", "staName")
-request.getParameters().extend(MAN_PARAMS)
-request.getParameters().extend(SIGT_PARAMS)
-
-t = DataAccessLayer.getAvailableTimes(request)
-response = DataAccessLayer.getGeometryData(request,times=t[-1].validPeriod)
-</code></pre>
-
-                    </div>
-                    <div class="ui tab segment" data-tab="modelsounding">
-<pre><code class="hljs python">from awips.dataaccess import DataAccessLayer
-DataAccessLayer.changeEDEXHost("edex-cloud.unidata.ucar.edu")
-
-request = DataAccessLayer.newDataRequest()
-request.setDatatype("modelsounding")
-
-forecastModel = "ETA"
-request.addIdentifier("reportType", forecastModel)
-request.setParameters("pressure","temperature","specHum","uComp","vComp","omega","cldCvr")
-request.setLocationNames("KDSM")
-
-cycles = DataAccessLayer.getAvailableTimes(request, True)
-times = DataAccessLayer.getAvailableTimes(request)
-
-try:
-    fcstRun = DataAccessLayer.getForecastCycle(cycles[-1], times)
-    list(fcstRun)
-    response = DataAccessLayer.getGeometryData(request,[fcstRun[0]])
-</code></pre>
-
-                    </div>
-                </div>
-
-            <h2>Creating a Data Request</h2>
-
-                <li><b>newDataRequest()</b></li>
-
-                    <ul>This creates a new data request. Most often this is a DefaultDataRequest.</ul>
-
-                <li><b>setDatatype(String)</b></li>
-
-                    <ul>The data type being retrieved.</ul>
-
-                <li><b>setParameters(String...)</b></li>
-
-                    <ul>This can differ depending on data type. It is most often used as a main difference between products.</ul>
-
-                <li><b>setLevels(String...)</b></li>
-
-                    <ul>This is often used to identify the same products on different mathematical angles, heights, levels, etc.</ul>
-
-                <li><b>addIdentifier(String, String)</b></li>
-
-                    <ul>This differs based on data type, but is often used for more fine-tuned querying.</ul>
-
-
-            <h2>Retrieving a Data Request</h2>
-
-
-                <li><b>getAvailableTimes(request, refTimeOnly=False)</b></li>
-
-                    <ul>Get the times of available data to the request.</ul>
-
-                <li><b>getGeometryData(request, times=[])</b></li>
-
-                    <ul>Gets the geometry data that matches the request at the specified times. Each combination of geometry, level, and dataTime will be returned as a separate IGeometryData.</ul>
-
-                <li><b>getGridData(request, times=[])</b></li>
-
-                    <ul>Gets the grid data that matches the request at the specified times. Each combination of parameter, level, and dataTime will be returned as a separate IGridData.</ul>
-
-                <li><b>getAvailableLevels(request)</b></li>
-
-                    <ul>Gets the available levels that match the request without actually requesting the data.</ul>
-
-                <li><b>getAvailableLocationNames(request)</b></li>
-
-                    <ul>Gets the available location names that match the request without actually requesting the data.</ul>
-
-                <li><b>getAvailableParameters(request)</b></li>
-
-                    <ul>Gets the available parameters names that match the request without actually requesting the data.</ul>
-
-                <li><b>getForecastCycle(cycle, times)</b></li>
-
-                    <ul>Returns a DataTime array for a single forecast run.</ul>
-
-                <li><b>getOptionalIdentifiers(datatype)</b></li>
-
-                     <ul>Gets the optional identifiers for this datatype.</ul>
-
-                <li><b>getRequiredIdentifiers(datatype)</b></li>
-
-                     <ul>Gets the required identifiers for this datatype. These identifiers must be set on a request for the request of this datatype to succeed.</ul>
-
-
-
-                <p>
-                    See <a href="https://github.com/Unidata/python-awips/blob/master/awips/dataaccess/DataAccessLayer.py" target=""_blank">DataAccessLayer.py</a> for more methods that can be called to retrieve data and different attributes of the data. Be aware that each data type has different parameters, levels, and identifiers.
-                </p>
-
-                <div class="buttons">
-                    <a href="http://python-awips.readthedocs.io" class="documentation ui fluid blue primary basic button x-tall" href="">
-                        READ THE DOCS
-                    </a>
-                </div>
-            </div>
-
-        </div>
-    </div>
-
-
-
-    <div class="ui vertical stripe segment">
-        <div class="ui middle aligned stackable grid container">
-            <div class="row">
-                <div class="eight wide column ">
-                    <h1 class="ui header">Unidata IDD</h1>
-                    <p>The <a href="http://www.unidata.ucar.edu/projects/#idd" target="_blank">Unidata IDD</a> (Internet Data Distribution) delivers real-time meteorological products and oberservations to the university geoscience community through peer-to-peer <a href="http://www.unidata.ucar.edu/software/ldm/" target="_blank">LDM</a> connections. The IDD and LDM also allow you to feed your own products or observations to interested sites, enabling the sharing of data between organization.</p>
-                </div>
-                <div class="eight wide column">
-                    <h1 class="ui header">EDEX Data Server</h1>
-                    <p>The Environmental Data EXchange (EDEX) Data Server is the primary application of the AWIPS system.  Raw data files are ingested into EDEX via the <a href="http://www.unidata.ucar.edu/software/ldm/" target="_blank">LDM</a>, which are then decoded into HDF5 files and PostgreSQL metadata records.  The EDEX Request JVM is responsible for serving data requests from the CAVE client and the Python API.</p>
-                </div>
-            </div>
-
-        </div>
-        <div class="ui text container">
-            <img src="http://www.unidata.ucar.edu/software/awips2/images/awips2_coms.png">
-        </div>
-    </div>
-
-    <div class="ui vertical stripe segment">
-        <div class="ui text container">
-            <h1 class="ui header">Development and Design</h1>
-            <p>The Python AWIPS framework supports requests as either grids or geometries (points, polygons, etc). The framework hides the implementation details of specific data types from users, making it easier to use data without worrying about how the data objects are structured or retrieved.</p>
-
-            <p>
-            <h3>Grids</h3>
-
-            <li>Grib</li>
-            <li>Satellite</li>
-            <li>Radar</li>
-
-            <h3>Geometries</h3>
-
-            <li>Map (states, counties, zones, etc)</li>
-            <li>Obs (metar)</li>
-            <li>FFMP</li>
-            <li>Hazard</li>
-            <li>Warning</li>
-            <li>CCFP</li>
-            <li>Airmet</li>
-        </p>
-
-        <p>The framework is designed around the concept of each data type plugin contributing the necessary code for the framework to support its data. That is, each plugin provides a factory class for interacting with the framework and registers itself as being compatible. This concept is similar to how EDEX in AWIPS expects a plugin to provide a decoder class and record class, and register them, but the rest of the ingest process is automated, including routing, storing, etc.  This architecture enables the framework to expand its capabilities to more data types without having to alter the framework itself.</p>
-
-    </div></div>
-
-
-    """ + footer() + """
-</div>
-
-            </body>
-
-        </html>
-            """
 
 # http://stackoverflow.com/a/1267145/5191979
 def RepresentsInt(s):
@@ -1583,6 +1015,8 @@ def RepresentsInt(s):
 
 
 if __name__ == '__main__':
+    env = Environment(loader=FileSystemLoader('templates'))
+    # regex exclude list
     pattern = re.compile("^((ECMF|UKMET|QPE|MPE|FFG|GribModel|HFR|RFCqpf|EPAC40))")
     DataAccessLayer.changeEDEXHost("edex-cloud.unidata.ucar.edu")
     #DataAccessLayer.changeEDEXHost("edextest.unidata.ucar.edu")
@@ -1609,9 +1043,8 @@ if __name__ == '__main__':
              'tools.staticdir.dir': os.path.join(current_dir, 'components')
          }
     }
-    ##cherrypy.config.update(server_config)
-    #cherrypy.quickstart(Edex(), '/', config=server_config)
-    from cherrypy.process.plugins import Daemonizer
-    d = Daemonizer(cherrypy.engine)
-    d.subscribe()
+    # run as daemon
+    #from cherrypy.process.plugins import Daemonizer
+    #d = Daemonizer(cherrypy.engine)
+    #d.subscribe()
     cherrypy.quickstart(Edex(), '/', config=server_config)

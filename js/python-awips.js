@@ -184,7 +184,6 @@ var dataMap = (function() {
                                         //imgIndex =  + Math.min(Math.max(~~point.x + x - ~~(w / 2), 0), size.x - 1);
                                         var partOne = (Math.floor(point.y) + y - Math.floor(h / 2)) * size.x;
                                         var partTwo = Math.min(Math.max(~~point.x + x - ~~(w / 2), 0), size.x - 1);
-                                        debugger;
                                         imgIndex =  partOne + partTwo;
                                         data[imgIndex] = (255 << 24) | (colorInt << 16) | (((colorInt >> 8) & 255) << 8) | (colorInt >> 16) & 255;
                                     }
