@@ -1,16 +1,23 @@
 <!DOCTYPE html>
 <html>
+
     {% include 'header.html' %}
+
     <body>
 
         <script type="text/javascript">
             $(document).ready(function(){
+
                 $('#grid-select').val('{{ name }}');
                 $('#site-select').val('{{ name }}');
                 $('#prod-select').val('{{ parmname }}');
                 $('#parm-select').val('{{ parmname }}');
                 $('#level-select').val('{{ level }}');
                 $('#cycle-select').val('{{ time }}');
+
+                $("#server-select").change(function () {
+                    location.href = "/inventory?server=" + $(this).val();
+                });
                 $("#grid-select").change(function () {
                     location.href = "/grid?name=" + $(this).val();
                 });
@@ -39,42 +46,26 @@
             });
         </script>
 
-    <div class="ui fixed inverted menu">
-        <div class="">
-            <div class="ui large secondary inverted pointing menu">
-                <a class="toc item">
-                  <i class="sidebar icon"></i>
-                </a>
-                <a class="item" href="/">AWIPS Data Portal</a>
-                <a class="item" href="/#api">Python API</a>
-                <a class="item" href="/geojson">GeoJSON</a>
-                <a class="item" href="/grid">Forecast Models</a>
-                <a class="item" href="/radar">NEXRAD Radar</a>
-            </div>
-        </div>
-    </div>
+        {% include 'page_header.html' %}
 
-    <div class="ui stackable padded grid">
-        <div class="ten wide column">
-            <div class="ui search action left icon input">
-                <i class="search icon"></i>
-                <input class="prompt" type="text" placeholder="Search Parameters...">
-                <div id="searchButton" class="ui teal button">Search</div>
-            </div>
-            <div class="results"></div>
+        <div class="ui stackable padded grid">
 
-            {{ mainContent }}
-        </div>
-        <div class="sidepane six wide column">
-            <div class="static">
-                <div class="ui padding vertically divided grid">
+            <div class="ui four wide column">
+
                 {{ sideContent }}
-                </div>
-            </div>
-        </div>
-    </div>
 
-    {% include 'footer.html' %}
+            </div>
+
+
+            <div class="ui ten wide column">
+
+                {{ mainContent }}
+
+            </div>
+
+        </div>
+
+        {% include 'footer.html' %}
 
     </body>
 
