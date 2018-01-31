@@ -270,7 +270,7 @@ class Edex:
 
 
     @cherrypy.expose
-    def grid(self, name="RAP40", parm="", level=""):
+    def grid(self, name="RAP13", parm="", level=""):
 
         request = DataAccessLayer.newDataRequest()
         request.setDatatype("grid")
@@ -278,11 +278,18 @@ class Edex:
         # Grid Names
         available_grids = DataAccessLayer.getAvailableLocationNames(request)
         available_grids.sort()
+
+	if name == "": name=available_grids[-1]
         request.setLocationNames(name)
 
         # Grid Parameters
         availableParms = DataAccessLayer.getAvailableParameters(request)
         availableParms.sort()
+
+	if len(availableParms) == 0:
+	    stringReturn = createpage(name,"","","",server+": no grid records found for "+name,"","")
+            return stringReturn	
+	
         if parm == "": parm = availableParms[-1]
         request.setParameters(str(parm))
 
@@ -391,7 +398,7 @@ request.setLevels(levels[0])</code></pre>
                         });
                         getGeoJSONBounds('/polygon?name="""+ name + """',function(response) {
                             var coveragePolygon = response.json;
-                              var container = document.getElementById('datamap');
+                            var container = document.getElementById('datamap');
                             var polygon =  [geoJsonPolygonFeature(coveragePolygon)] ;
                             var jsonMap = dataMap.map({
                                 el: container,
@@ -539,7 +546,7 @@ request.setLevels(levels[0])</code></pre>
 
 
     @cherrypy.expose
-    def coverage(self, name="RAP40"):
+    def coverage(self, name="RAP13"):
         import psycopg2
         conn = None
         coverage = ''
@@ -567,7 +574,7 @@ request.setLevels(levels[0])</code></pre>
 
 
     @cherrypy.expose
-    def polygon(self, name="RAP40"):
+    def polygon(self, name="RAP13"):
         import psycopg2
         conn = None
         polygon = ''
@@ -582,6 +589,59 @@ request.setLevels(levels[0])</code></pre>
             print('Unable to connect the database: ' + str(ex))
 
 
+    @cherrypy.expose
+    def image(self, name="RAP13", parm="T", level="0.0SFC"):
+        import cartopy.crs as ccrs
+        import matplotlib.pyplot as plt
+        from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+        import numpy as np
+        request = DataAccessLayer.newDataRequest()
+        request.setDatatype("grid")
+        request.setLocationNames(name)
+        request.setParameters(parm)
+        request.setLevels(str(level))
+        cycles = DataAccessLayer.getAvailableTimes(request, True)
+        times = DataAccessLayer.getAvailableTimes(request)
+        fcstRun = DataAccessLayer.getForecastRun(cycles[-1], times)
+        response = DataAccessLayer.getGridData(request, [fcstRun[-1]])
+        grid = response[0]
+        data = grid.getRawData()
+        lons, lats = grid.getLatLonCoords()
+        bbox = [lons.min(), lons.max(), lats.min(), lats.max()]
+
+        def make_map(bbox, projection=ccrs.PlateCarree()):
+            fig, ax = plt.subplots(subplot_kw=dict(projection=projection))
+            fig.tight_layout()
+            ax.set_extent(bbox)
+            ax.coastlines(resolution='50m')
+            gl = ax.gridlines(draw_labels=True)
+            gl.xlabels_top = gl.ylabels_right = False
+            #gl.xformatter = LONGITUDE_FORMATTER
+            #gl.yformatter = LATITUDE_FORMATTER
+            return fig, ax
+
+        fig, ax = make_map(bbox=bbox)
+        cs = ax.pcolormesh(lons, lats, data, cmap=plt.get_cmap('rainbow'))
+        cbar = fig.colorbar(cs, extend='both', shrink=0.5, orientation='horizontal')
+        cbar.set_label(str(grid.getLocationName()) +" " \
+                + str(grid.getLevel()) + " " \
+                + str(grid.getParameter()) + " " \
+                + "(" + str(grid.getUnit()) + ") " \
+                + " valid " + str(grid.getDataTime().getRefTime()) )
+
+        # Write image
+        format = "png"
+        sio = cStringIO.StringIO()
+        plt.savefig(sio, format=format)
+        print("Content-Type: image/%s\n" % format)
+        sys.stdout.write(sio.getvalue())
+        #cartopyImage = '<img style="border: 0;" src="data:image/png;base64,'+sio.getvalue().encode("base64").strip()+'"/>'
+        #cartopyImage = '<img style="border: 0;" src="data:image/png;base64,'+sio.getvalue().encode("base64").strip()+'"/>'
+        #self.set_header('Content-Type', 'image/png')
+        #self.write(figdata.getvalue())
+        #return sio
+        return sio.getvalue()
+
 
 
 
@@ -589,7 +649,7 @@ request.setLevels(levels[0])</code></pre>
 
 
     @cherrypy.expose
-    def geojson(self, name="RAP40", parm="T", level="0.0SFC"):
+    def geojson(self, name="RAP13", parm="T", level="0.0SFC"):
         import cartopy.crs as ccrs
         import matplotlib.pyplot as plt
         from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
@@ -617,8 +677,8 @@ request.setLevels(levels[0])</code></pre>
             ax.coastlines(resolution='50m')
             gl = ax.gridlines(draw_labels=True)
             gl.xlabels_top = gl.ylabels_right = False
-            gl.xformatter = LONGITUDE_FORMATTER
-            gl.yformatter = LATITUDE_FORMATTER
+            #gl.xformatter = LONGITUDE_FORMATTER
+            #gl.yformatter = LATITUDE_FORMATTER
             return fig, ax
 
         fig, ax = make_map(bbox=bbox)
@@ -715,7 +775,7 @@ request.setLevels(levels[0])</code></pre>
 
 
        if __name__ == '__main__':
-           DataAccessLayer.changeEDEXHost("edex-cloud.unidata.ucar.edu")
+           DataAccessLayer.changeEDEXHost(server)
            from cherrypy.process.plugins import Daemonizer
            d = Daemonizer(cherrypy.engine)
            d.subscribe()
@@ -723,7 +783,7 @@ request.setLevels(levels[0])</code></pre>
 
 
 
-
+	<!--
         <div class="ui segment">
             <h2>Render Native (Irregular) Grid w Leaflet</h2>
             <div id="dsmap"></div>
@@ -740,7 +800,7 @@ request.setLevels(levels[0])</code></pre>
             <p><a href='/remapped?name="""+name+"""&parm="""+parm+"""&level=0.0SFC'>/remapped?name="""+name+"""&parm="""+parm+"""&level=0.0SFC</a></p>
 
         </div>
-
+	-->
         <div class="ui segment">
             <h2>Render w Cartopy and Matplotlib</h2>
             <div id="cartopy">""" + cartopyImage + """</div>
@@ -754,7 +814,7 @@ request.setLevels(levels[0])</code></pre>
     DataAccessLayer.changeEDEXHost("edex-cloud.unidata.ucar.edu")
     request = DataAccessLayer.newDataRequest()
     request.setDatatype("grid")
-    request.setLocationNames("RAP40")
+    request.setLocationNames("RAP13")
     request.setParameters("T")
     request.setLevels("0.0SFC")
 
@@ -967,9 +1027,11 @@ request.setLevels("'''+str(llevel)+'''")
         # for time in fcstRun:
         #     renderHtml += '<option value="%s">%s</option>' % (time, time)
         # renderHtml += '</select></div><br><Br>'
-
+        suf = 's'
+        if count == 1:
+             suf = ''
         renderHtml = parmSearch + '<h1 class="ui dividing header">' + parm + ' - ' + parmText + ' (' + parmUnit + ')</h1>' \
-                     + str(count) + ' results ' + gridLabels + '<p>' + gridString + '</p></div></div>'
+                     + str(count) + ' record' +suf+ ' ' + gridLabels + '<p>' + gridString + '</p></div></div>'
 
         sideContent = ''
         parmlist = ''
@@ -1015,6 +1077,7 @@ def RepresentsInt(s):
 
 
 if __name__ == '__main__':
+    server="edex-cloud.unidata.ucar.edu"
     env = Environment(loader=FileSystemLoader('templates'))
     # regex exclude list
     pattern = re.compile("^((ECMF|UKMET|QPE|MPE|FFG|GribModel|HFR|RFCqpf|EPAC40))")
