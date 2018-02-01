@@ -490,11 +490,91 @@ class Edex:
                 if days > 1:
                     offsetStr = str(days) + " days ago"
                 color="green"
-                if hours > 1:
+                if hours > 4:
                     color="orange"
 
                 product_string = sect + product_count_label(len(availableProducts))
                 productList += product_status(color, product_string, offsetStr, utc_str)
+
+        # Warning
+        product="Warnings"
+
+        import numpy as np
+        import cartopy.crs as ccrs
+        from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+
+        productList += """
+                <tr>
+                    <td colspan=3>
+                        <h2 class="ui header">
+                          <img src="/images/warning.png" class="ui circular image">
+                          Geometries
+                        </h2>
+                    </td>
+                </tr>"""
+
+        request = DataAccessLayer.newDataRequest()
+        request.setDatatype("warning")
+        request.setParameters('act','countyheader', 'endtime','etn','floodbegin',
+                              'floodcrest', 'floodend','floodrecordstatus',
+                              'floodseverity', 'id', 'immediatecause', 'inserttime',
+                              'issuetime', 'loc', 'locationid', 'motdir', 'motspd',
+                              'overviewtext', 'phen', 'phensig', 'pil', 'productclass',
+                              'purgetime', 'rawmessage', 'seg', 'segtext', 'sig',
+                              'starttime', 'ugczones', 'vtecstr', 'wmoid', 'xxxid')
+
+        response = DataAccessLayer.getGeometryData(request)
+
+        warningStr = ''
+        parameters = {}
+        for x in request.getParameters():
+            parameters[x] = np.array([])
+        geometries=np.array([])
+        siteid=np.array([])
+        period=np.array([])
+        reftime=np.array([])
+
+        for ob in response:
+            for parm in parameters:
+                parameters[parm] = np.append(parameters[parm],ob.getString(parm))
+            geometries = np.append(geometries,ob.getGeometry())
+            siteid = np.append(siteid,str(ob.getLocationName()))
+            period = np.append(period,ob.getDataTime().getValidPeriod())
+            reftime = np.append(reftime,ob.getDataTime().getRefTime())
+
+        warningStr += str(siteid) +", "+ str(period) + ", " + str(reftime)
+
+
+
+        if not response:
+            productList += product_status('red', product + ": "+ str(len(response)) + " records ", 'None')
+        else:
+            utc = datetime.utcnow()
+            times = DataAccessLayer.getAvailableTimes(request)
+            utc_str = str(datetime.utcfromtimestamp(int(times[-1].getRefTime().getTime()/1000)))
+            try:
+                hourdiff = utc - datetime.strptime(str(times[-1]),'%Y-%m-%d %H:%M:%S')
+            except:
+                hourdiff = utc - datetime.strptime(str(times[-1]),'%Y-%m-%d %H:%M:%S.%f')
+            hours,days = hourdiff.seconds/3600,hourdiff.days
+            minute = str((hourdiff.seconds - (3600 * hours)) / 60)
+            offsetStr = ''
+            if hours > 0:
+                offsetStr += str(hours) + "hr "
+            offsetStr += str(minute) + "min ago"
+            if days > 1:
+                offsetStr = str(days) + " days ago"
+            color="green"
+            if hours > 1:
+                color="orange"
+
+            product_string = product + product_count_label(len(response)) + warningStr
+            productList += product_status(color, product_string, offsetStr, utc_str)
+
+
+
+
+
 
 
 
@@ -888,17 +968,177 @@ request.setLevels(levels[0])</code></pre>
 
 
     @cherrypy.expose
-    def geojson(self, name="RAP13", parm="T", level="0.0SFC"):
+    def geojson(self, name="RAP13", parm="T", level="0.0SFC", server="edex-cloud.unidata.ucar.edu"):
         import cartopy.crs as ccrs
         import matplotlib.pyplot as plt
         from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
         import numpy as np
 
+        DataAccessLayer.changeEDEXHost(server)
         request = DataAccessLayer.newDataRequest()
         request.setDatatype("grid")
         request.setLocationNames(name)
         request.setParameters(parm)
         request.setLevels(str(level))
+
+        cycles = DataAccessLayer.getAvailableTimes(request, True)
+        times = DataAccessLayer.getAvailableTimes(request)
+
+        def make_map(bbox, projection=ccrs.PlateCarree()):
+            fig, ax = plt.subplots(subplot_kw=dict(projection=projection))
+            fig.tight_layout()
+            ax.set_extent(bbox)
+            ax.coastlines(resolution='50m')
+            gl = ax.gridlines(draw_labels=True)
+            gl.xlabels_top = gl.ylabels_right = False
+            #gl.xformatter = LONGITUDE_FORMATTER
+            #gl.yformatter = LATITUDE_FORMATTER
+            return fig, ax
+
+        if cycles:
+            fcstRun = DataAccessLayer.getForecastRun(cycles[-1], times)
+            response = DataAccessLayer.getGridData(request, [fcstRun[-1]])
+            grid = response[0]
+            data = grid.getRawData()
+            lons, lats = grid.getLatLonCoords()
+            bbox = [lons.min(), lons.max(), lats.min(), lats.max()]
+
+            fig, ax = make_map(bbox=bbox)
+            cs = ax.pcolormesh(lons, lats, data, cmap=plt.get_cmap('rainbow'))
+            cbar = fig.colorbar(cs, extend='both', shrink=0.5, orientation='horizontal')
+            cbar.set_label(str(grid.getLocationName()) +" " \
+                    + str(grid.getLevel()) + " " \
+                    + str(grid.getParameter()) + " " \
+                    + "(" + str(grid.getUnit()) + ") " \
+                    + " valid " + str(grid.getDataTime().getRefTime()) )
+
+            # Write image
+            format = "png"
+            sio = cStringIO.StringIO()
+            plt.savefig(sio, format=format)
+            print("Content-Type: image/%s\n" % format)
+            sys.stdout.write(sio.getvalue())
+            cartopyImage = '<img style="border: 0;" src="data:image/png;base64,'+sio.getvalue().encode("base64").strip()+'"/>'
+
+            renderHtml =  """
+                    <script type="text/javascript">
+                        var createGeoJSON = function(){
+
+                            getGeoJSON('/api?name="""+name+"""&parm=T&level=0.0SFC',function(response) {
+                                var json = response.json;
+                                var container = document.getElementById('dsmap');
+                                var maps = mapConfig(colormaps, container);
+                                maps.jsonMap.drawImage(json, response.json.metadata);
+                            })
+
+                            getGeoJSONBounds('/polygon?name="""+name+"""',function(response) {
+                                var coveragePolygon = response.json;
+                                var container = document.getElementById('datamap');
+                                var polygon =  [geoJsonPolygonFeature(coveragePolygon)] ;
+                                var jsonMap = dataMap.map({
+                                    el: container,
+                                    scrollWheelZoom: false,
+                                    center: {lat: 40, lng: -105}
+                                }).init().drawPolygon(polygon).zoomToBounds(polygon);
+                            });
+
+                            // Remapped (static example)
+                            var json = response_json;
+                            json.values = json.values.map(function(d, i) {
+                                return d.map(function(b) {
+                                    if (b === -999) {return null;}
+                                    return b
+                                });
+                            });
+                            json.uniqueValues = unique(json.values).sort();
+                            var container = document.getElementById('remapped');
+                            var maps = mapConfig(colormaps, container);
+                            maps.jsonMap.drawImage(json, response_json.metadata);
+                        }
+                    </script>
+                    <h1>Building a GeoJSON API with python-awips and CherryPy</h1>
+
+    <p>Using a DataAccessLayer <a target='_blank' href='http://python-awips.readthedocs.io/en/latest/api/IDataRequest.html'>newDataRequest()</a> to request a grid feild ("""+name+""" surface temperature) we can interpolate to a regularly-spaced coordinate grid using Matplotlib, returned as a JSON object.</p>
+
+    <pre class='small'><code>   from awips.dataaccess import DataAccessLayer
+       import json
+
+       class Edex:
+
+           @cherrypy.expose
+           def api(self, name=""""+name+"""", parm="T", level="0.0SFC"):
+               request = DataAccessLayer.newDataRequest()
+               request.setDatatype("grid")
+               request.setLocationNames(name)
+               request.setParameters(parm)
+               request.setLevels(str(level))
+               cycles = DataAccessLayer.getAvailableTimes(request, True)
+               times = DataAccessLayer.getAvailableTimes(request)
+               fcstRun = DataAccessLayer.getForecastRun(cycles[-1], times)
+               response = DataAccessLayer.getGridData(request, [fcstRun[-1]])
+               data = response[0].getRawData()
+               lon, lat = response[0].getLatLonCoords()
+               datadict = {
+                   "lats"    : lat.transpose().tolist()[::-1],
+                   "lons"    : lon.transpose().tolist()[::-1],
+                   "values"  : data.transpose().tolist()[::-1],
+                   "metadata": {
+                       "datetime": "1484956800000",
+                       "unit": "K",
+                       "coverage": {
+                           "latmax": str(lat.max()),
+                           "lonmin": str(lon.min()),
+                           "lonmax": str(lon.max()),
+                           "latmin": str(lat.min())
+                       }
+                   }
+               }
+               return json.dumps(datadict)
+
+
+           if __name__ == '__main__':
+               DataAccessLayer.changeEDEXHost(server)
+               from cherrypy.process.plugins import Daemonizer
+               d = Daemonizer(cherrypy.engine)
+               d.subscribe()
+               cherrypy.quickstart(Edex(), '/', config=server_config)</code></pre>
+
+
+
+        <!--
+            <div class="ui segment">
+                <h2>Render Native (Irregular) Grid w Leaflet</h2>
+                <div id="dsmap"></div>
+
+                <p><a href='/api?name="""+name+"""&parm="""+parm+"""&level=0.0SFC'>/api?name="""+name+"""&parm="""+parm+"""&level=0.0SFC</a></p>
+
+            </div>
+
+
+            <div class="ui segment">
+                <h2>Render Remapped Grid w Leaflet</h2>
+                <div id="remapped"></div>
+
+                <p><a href='/remapped?name="""+name+"""&parm="""+parm+"""&level=0.0SFC'>/remapped?name="""+name+"""&parm="""+parm+"""&level=0.0SFC</a></p>
+
+            </div>
+        -->
+            <div class="ui segment">
+                <h2>Render w Cartopy and Matplotlib</h2>
+                <div id="cartopy">""" + cartopyImage + """</div>
+
+                <pre><code>
+        import cartopy.crs as ccrs
+        import matplotlib.pyplot as plt
+        from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+        import numpy as np
+
+        DataAccessLayer.changeEDEXHost("edex-cloud.unidata.ucar.edu")
+        request = DataAccessLayer.newDataRequest()
+        request.setDatatype("grid")
+        request.setLocationNames("RAP13")
+        request.setParameters("T")
+        request.setLevels("0.0SFC")
 
         cycles = DataAccessLayer.getAvailableTimes(request, True)
         times = DataAccessLayer.getAvailableTimes(request)
@@ -916,251 +1156,94 @@ request.setLevels(levels[0])</code></pre>
             ax.coastlines(resolution='50m')
             gl = ax.gridlines(draw_labels=True)
             gl.xlabels_top = gl.ylabels_right = False
-            #gl.xformatter = LONGITUDE_FORMATTER
-            #gl.yformatter = LATITUDE_FORMATTER
+            gl.xformatter = LONGITUDE_FORMATTER
+            gl.yformatter = LATITUDE_FORMATTER
             return fig, ax
 
         fig, ax = make_map(bbox=bbox)
         cs = ax.pcolormesh(lons, lats, data, cmap=plt.get_cmap('rainbow'))
         cbar = fig.colorbar(cs, extend='both', shrink=0.5, orientation='horizontal')
-        cbar.set_label(str(grid.getLocationName()) +" " \
-                + str(grid.getLevel()) + " " \
-                + str(grid.getParameter()) + " " \
-                + "(" + str(grid.getUnit()) + ") " \
-                + " valid " + str(grid.getDataTime().getRefTime()) )
-
-        # Write image
-        format = "png"
-        sio = cStringIO.StringIO()
-        plt.savefig(sio, format=format)
-        print("Content-Type: image/%s\n" % format)
-        sys.stdout.write(sio.getvalue())
-        cartopyImage = '<img style="border: 0;" src="data:image/png;base64,'+sio.getvalue().encode("base64").strip()+'"/>'
-
-        renderHtml =  """
-                <script type="text/javascript">
-                    var createGeoJSON = function(){
-
-                        getGeoJSON('/api?name="""+name+"""&parm=T&level=0.0SFC',function(response) {
-                            var json = response.json;
-                            var container = document.getElementById('dsmap');
-                            var maps = mapConfig(colormaps, container);
-                            maps.jsonMap.drawImage(json, response.json.metadata);
-                        })
-
-                        getGeoJSONBounds('/polygon?name="""+name+"""',function(response) {
-                            var coveragePolygon = response.json;
-                            var container = document.getElementById('datamap');
-                            var polygon =  [geoJsonPolygonFeature(coveragePolygon)] ;
-                            var jsonMap = dataMap.map({
-                                el: container,
-                                scrollWheelZoom: false,
-                                center: {lat: 40, lng: -105}
-                            }).init().drawPolygon(polygon).zoomToBounds(polygon);
-                        });
-
-                        // Remapped (static example)
-                        var json = response_json;
-                        json.values = json.values.map(function(d, i) {
-                            return d.map(function(b) {
-                                if (b === -999) {return null;}
-                                return b
-                            });
-                        });
-                        json.uniqueValues = unique(json.values).sort();
-                        var container = document.getElementById('remapped');
-                        var maps = mapConfig(colormaps, container);
-                        maps.jsonMap.drawImage(json, response_json.metadata);
-                    }
-                </script>
-                <h1>Building a GeoJSON API with python-awips and CherryPy</h1>
-
-<p>Using a DataAccessLayer <a target='_blank' href='http://python-awips.readthedocs.io/en/latest/api/IDataRequest.html'>newDataRequest()</a> to request a grid feild ("""+name+""" surface temperature) we can interpolate to a regularly-spaced coordinate grid using Matplotlib, returned as a JSON object.</p>
-
-<pre class='small'><code>   from awips.dataaccess import DataAccessLayer
-   import json
-
-   class Edex:
-
-       @cherrypy.expose
-       def api(self, name=""""+name+"""", parm="T", level="0.0SFC"):
-           request = DataAccessLayer.newDataRequest()
-           request.setDatatype("grid")
-           request.setLocationNames(name)
-           request.setParameters(parm)
-           request.setLevels(str(level))
-           cycles = DataAccessLayer.getAvailableTimes(request, True)
-           times = DataAccessLayer.getAvailableTimes(request)
-           fcstRun = DataAccessLayer.getForecastRun(cycles[-1], times)
-           response = DataAccessLayer.getGridData(request, [fcstRun[-1]])
-           data = response[0].getRawData()
-           lon, lat = response[0].getLatLonCoords()
-           datadict = {
-               "lats"    : lat.transpose().tolist()[::-1],
-               "lons"    : lon.transpose().tolist()[::-1],
-               "values"  : data.transpose().tolist()[::-1],
-               "metadata": {
-                   "datetime": "1484956800000",
-                   "unit": "K",
-                   "coverage": {
-                       "latmax": str(lat.max()),
-                       "lonmin": str(lon.min()),
-                       "lonmax": str(lon.max()),
-                       "latmin": str(lat.min())
-                   }
-               }
-           }
-           return json.dumps(datadict)
-
-
-       if __name__ == '__main__':
-           DataAccessLayer.changeEDEXHost(server)
-           from cherrypy.process.plugins import Daemonizer
-           d = Daemonizer(cherrypy.engine)
-           d.subscribe()
-           cherrypy.quickstart(Edex(), '/', config=server_config)</code></pre>
-
-
-
-	<!--
-        <div class="ui segment">
-            <h2>Render Native (Irregular) Grid w Leaflet</h2>
-            <div id="dsmap"></div>
-
-            <p><a href='/api?name="""+name+"""&parm="""+parm+"""&level=0.0SFC'>/api?name="""+name+"""&parm="""+parm+"""&level=0.0SFC</a></p>
-
-        </div>
-
-
-        <div class="ui segment">
-            <h2>Render Remapped Grid w Leaflet</h2>
-            <div id="remapped"></div>
-
-            <p><a href='/remapped?name="""+name+"""&parm="""+parm+"""&level=0.0SFC'>/remapped?name="""+name+"""&parm="""+parm+"""&level=0.0SFC</a></p>
-
-        </div>
-	-->
-        <div class="ui segment">
-            <h2>Render w Cartopy and Matplotlib</h2>
-            <div id="cartopy">""" + cartopyImage + """</div>
-
-            <pre><code>
-    import cartopy.crs as ccrs
-    import matplotlib.pyplot as plt
-    from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
-    import numpy as np
-
-    DataAccessLayer.changeEDEXHost("edex-cloud.unidata.ucar.edu")
-    request = DataAccessLayer.newDataRequest()
-    request.setDatatype("grid")
-    request.setLocationNames("RAP13")
-    request.setParameters("T")
-    request.setLevels("0.0SFC")
-
-    cycles = DataAccessLayer.getAvailableTimes(request, True)
-    times = DataAccessLayer.getAvailableTimes(request)
-    fcstRun = DataAccessLayer.getForecastRun(cycles[-1], times)
-    response = DataAccessLayer.getGridData(request, [fcstRun[-1]])
-    grid = response[0]
-    data = grid.getRawData()
-    lons, lats = grid.getLatLonCoords()
-    bbox = [lons.min(), lons.max(), lats.min(), lats.max()]
-
-    def make_map(bbox, projection=ccrs.PlateCarree()):
-        fig, ax = plt.subplots(subplot_kw=dict(projection=projection))
-        fig.tight_layout()
-        ax.set_extent(bbox)
-        ax.coastlines(resolution='50m')
-        gl = ax.gridlines(draw_labels=True)
-        gl.xlabels_top = gl.ylabels_right = False
-        gl.xformatter = LONGITUDE_FORMATTER
-        gl.yformatter = LATITUDE_FORMATTER
-        return fig, ax
-
-    fig, ax = make_map(bbox=bbox)
-    cs = ax.pcolormesh(lons, lats, data, cmap=plt.get_cmap('rainbow'))
-    cbar = fig.colorbar(cs, extend='both', shrink=0.5, orientation='horizontal')
-    cbar.set_label(str(grid.getLocationName()) +" " \\
-        + str(grid.getLevel()) + " " \\
-        + str(grid.getParameter()) + " " \\
-        + "(" + str(grid.getUnit()) + ") " \\
-        + " valid " + str(grid.getDataTime().getRefTime()) )
-    plt.show()
-    </code></pre>
-        </div>
+        cbar.set_label(str(grid.getLocationName()) +" " \\
+            + str(grid.getLevel()) + " " \\
+            + str(grid.getParameter()) + " " \\
+            + "(" + str(grid.getUnit()) + ") " \\
+            + " valid " + str(grid.getDataTime().getRefTime()) )
+        plt.show()
+        </code></pre>
+            </div>
 
 
 
 
-     <h2>Leaflet Bounding Box Overlay</h2>
-        <div class="ui segment">
-                <h3>1) Using Psycopg2 and json.dumps</h3>
+         <h2>Leaflet Bounding Box Overlay</h2>
+            <div class="ui segment">
+                    <h3>1) Using Psycopg2 and json.dumps</h3>
 
-                <pre class='small'><code>    conn = None
-        try:
-            conn = psycopg2.connect("dbname = 'metadata' user = 'awips' host = 'localhost' password='awips'")
-            cur = conn.cursor()
-            cur.execute("select * from gridcoverage where id = "
-                        "(select distinct location_id from grid_info where datasetid = '"""+name+"""');")
-            columns = ('dtype', 'id', 'crs', 'dx', 'dy', 'firstgridpointcorner', 'the_geom',
-                'la1', 'lo1', 'name', 'nx', 'ny', 'spacingunit', 'latin1', 'latin2', 'lov',
-                'majoraxis', 'minoraxis', 'la2', 'latin', 'lo2', 'lad')
-            results = []
-            for row in cur.fetchall():
-                results.append(dict(zip(columns, row)))
-            coverage = json.dumps(results, indent=2)</code></pre>
-
-            Result:
-
-            <pre class='small'><code>    [
-      {
-        "dtype": "LambertConformalGridCoverage",
-        "la1": 16.281,
-        "la2": 25.0,
-        "spacingunit": "km",
-        "minoraxis": 25.0,
-        "id": 94,
-        "nx": 151,
-        "ny": 113,
-        "lo1": -126.138,
-        "lov": 6378160.0,
-        "latin": null,
-        "lad": null,
-        "dx": 40.63525,
-        "dy": 40.63525,
-        "name": "236",
-        "latin2": -95.0,
-        "lo2": null,
-        "firstgridpointcorner": "LowerLeft",
-        "majoraxis": 6356775.0
-        "the_geom": "010300000001000000050000006B1552B2CA915FC089E7C36C19103040C3F91A0F673D51C04A01767C91253140211C8D4436954CC085312DFAFCD64B406656249C828561C0E7A795565D2C4B406B1552B2CA915FC089E7C36C19103040", "latin1": null, "crs": "PROJCS[\"Lambert Conformal (SP: 25.0/25.0, Origin: -95.0)\", \n GEOGCS[\"WGS84(DD)\", \n DATUM[\"WGS84\", \n SPHEROID[\"WGS84\", 6378137.0, 298.257223563]], \n PRIMEM[\"Greenwich\", 0.0], \n UNIT[\"degree\", 0.017453292519943295], \n AXIS[\"Geodetic longitude\", EAST], \n AXIS[\"Geodetic latitude\", NORTH]], \n PROJECTION[\"Lambert_Conformal_Conic_1SP\"], \n PARAMETER[\"semi_major\", 6378160.0], \n PARAMETER[\"semi_minor\", 6356775.0], \n PARAMETER[\"central_meridian\", -95.0], \n PARAMETER[\"latitude_of_origin\", 25.0], \n PARAMETER[\"scale_factor\", 1.0], \n PARAMETER[\"false_easting\", 0.0], \n PARAMETER[\"false_northing\", 0.0], \n UNIT[\"m\", 1.0], \n AXIS[\"Easting\", EAST], \n AXIS[\"Northing\", NORTH]]"
-      }
-   ]
-            </code></pre>
-        </div>
-        <div class="ui segment">
-                <h3>2) Simple bounds using <b>ST_AsGeoJSON</b></h3>
-
-                <pre class='small'><code>    SELECT ST_AsGeoJSON(the_geom) from gridcoverage
-    where id = (select distinct location_id
-                from grid_info
-                where datasetid = '"""+name+"""');</code></pre>
+                    <pre class='small'><code>    conn = None
+            try:
+                conn = psycopg2.connect("dbname = 'metadata' user = 'awips' host = 'localhost' password='awips'")
+                cur = conn.cursor()
+                cur.execute("select * from gridcoverage where id = "
+                            "(select distinct location_id from grid_info where datasetid = '"""+name+"""');")
+                columns = ('dtype', 'id', 'crs', 'dx', 'dy', 'firstgridpointcorner', 'the_geom',
+                    'la1', 'lo1', 'name', 'nx', 'ny', 'spacingunit', 'latin1', 'latin2', 'lov',
+                    'majoraxis', 'minoraxis', 'la2', 'latin', 'lo2', 'lad')
+                results = []
+                for row in cur.fetchall():
+                    results.append(dict(zip(columns, row)))
+                coverage = json.dumps(results, indent=2)</code></pre>
 
                 Result:
 
-                <pre class='small'><code>    {
-        "type":"Polygon",
-        "coordinates":[[
-            [-126.277996616516,16.0628879526408],
-            [-68.9594152224955,17.1467511928652],
-            [-57.1657186211598,55.6795952530547],
-            [-140.172193594906,54.3465984564535],
-            [-126.277996616516,16.0628879526408]
-        ]]
-    }</code></pre>
-        </div>
+                <pre class='small'><code>    [
+          {
+            "dtype": "LambertConformalGridCoverage",
+            "la1": 16.281,
+            "la2": 25.0,
+            "spacingunit": "km",
+            "minoraxis": 25.0,
+            "id": 94,
+            "nx": 151,
+            "ny": 113,
+            "lo1": -126.138,
+            "lov": 6378160.0,
+            "latin": null,
+            "lad": null,
+            "dx": 40.63525,
+            "dy": 40.63525,
+            "name": "236",
+            "latin2": -95.0,
+            "lo2": null,
+            "firstgridpointcorner": "LowerLeft",
+            "majoraxis": 6356775.0
+            "the_geom": "010300000001000000050000006B1552B2CA915FC089E7C36C19103040C3F91A0F673D51C04A01767C91253140211C8D4436954CC085312DFAFCD64B406656249C828561C0E7A795565D2C4B406B1552B2CA915FC089E7C36C19103040", "latin1": null, "crs": "PROJCS[\"Lambert Conformal (SP: 25.0/25.0, Origin: -95.0)\", \n GEOGCS[\"WGS84(DD)\", \n DATUM[\"WGS84\", \n SPHEROID[\"WGS84\", 6378137.0, 298.257223563]], \n PRIMEM[\"Greenwich\", 0.0], \n UNIT[\"degree\", 0.017453292519943295], \n AXIS[\"Geodetic longitude\", EAST], \n AXIS[\"Geodetic latitude\", NORTH]], \n PROJECTION[\"Lambert_Conformal_Conic_1SP\"], \n PARAMETER[\"semi_major\", 6378160.0], \n PARAMETER[\"semi_minor\", 6356775.0], \n PARAMETER[\"central_meridian\", -95.0], \n PARAMETER[\"latitude_of_origin\", 25.0], \n PARAMETER[\"scale_factor\", 1.0], \n PARAMETER[\"false_easting\", 0.0], \n PARAMETER[\"false_northing\", 0.0], \n UNIT[\"m\", 1.0], \n AXIS[\"Easting\", EAST], \n AXIS[\"Northing\", NORTH]]"
+          }
+       ]
+                </code></pre>
+            </div>
+            <div class="ui segment">
+                    <h3>2) Simple bounds using <b>ST_AsGeoJSON</b></h3>
 
-                <div id="datamap"></div>"""
+                    <pre class='small'><code>    SELECT ST_AsGeoJSON(the_geom) from gridcoverage
+        where id = (select distinct location_id
+                    from grid_info
+                    where datasetid = '"""+name+"""');</code></pre>
+
+                    Result:
+
+                    <pre class='small'><code>    {
+            "type":"Polygon",
+            "coordinates":[[
+                [-126.277996616516,16.0628879526408],
+                [-68.9594152224955,17.1467511928652],
+                [-57.1657186211598,55.6795952530547],
+                [-140.172193594906,54.3465984564535],
+                [-126.277996616516,16.0628879526408]
+            ]]
+        }</code></pre>
+            </div>
+
+                    <div id="datamap"></div>"""
 
         stringReturn = createpage(name,parm,str(level),'',renderHtml,'','')
         return stringReturn
