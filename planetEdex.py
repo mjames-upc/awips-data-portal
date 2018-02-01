@@ -322,8 +322,8 @@ class Edex:
             stringReturn = createpage(id,'','','',content,serverSelect,'')
             return stringReturn
 
-        #if not available_grids:
-        #    available_grids = gridnames
+        if not available_grids:
+            available_grids = gridnames
 
         productList += """<table class="ui single line table">
 
@@ -407,7 +407,7 @@ class Edex:
             color='green'
             if hours > 1:
                 color='orange'
-            product_string = str(site).upper() + " <div class='ui label mini'>" + str(len(wsrProducts)) + " products</div>"
+            product_string = str(site).upper() + product_count_label(len(wsrProducts))
             productList += product_status(color, product_string, str(hrdiff), utc_str)
 
         sect = "NEXRCOMP"
@@ -439,7 +439,7 @@ class Edex:
             if hours > 1:
                 color="orange"
 
-            product_string = sect + " <div class='ui label mini'>" + str(len(nexrcompProducts)) + " products</div>"
+            product_string = sect + product_count_label(len(nexrcompProducts))
 
             productList += product_status(color, product_string, offsetStr, utc_str)
 
@@ -493,7 +493,7 @@ class Edex:
                 if hours > 1:
                     color="orange"
 
-                product_string = sect + " <div class='ui label mini'>" + str(len(availableProducts)) + " products</div>"
+                product_string = sect + product_count_label(len(availableProducts))
                 productList += product_status(color, product_string, offsetStr, utc_str)
 
 
@@ -1331,7 +1331,11 @@ def product_status(color='black', product='', time='', utc=''):
             """
 
 
-
+def product_count_label(count=0):
+    if count > 1:
+        return " <div class='ui label mini'>" + str(count) + " products</div>"
+    else:
+        return " <div class='ui label mini'>" + str(count) + " product</div>"
 
 
 
