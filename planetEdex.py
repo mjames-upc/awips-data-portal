@@ -273,7 +273,7 @@ class Edex:
 
     @cherrypy.expose
     def inventory(self, server="edex-cloud.unidata.ucar.edu"):
-        from datetime import datetime
+        from datetime import datetime, timedelta
 
         edex_server = [
             'edextest.unidata.ucar.edu',
@@ -496,12 +496,16 @@ class Edex:
                 product_string = sect + product_count_label(len(availableProducts))
                 productList += product_status(color, product_string, offsetStr, utc_str)
 
-        # Warning
+        # GEOMETRIES
+
+        ## Warnings
+
         product="Warnings"
 
         import numpy as np
         import cartopy.crs as ccrs
         from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+        from dynamicserialize.dstypes.com.raytheon.uf.common.time import TimeRange
 
         productList += """
                 <tr>
@@ -523,39 +527,28 @@ class Edex:
                               'purgetime', 'rawmessage', 'seg', 'segtext', 'sig',
                               'starttime', 'ugczones', 'vtecstr', 'wmoid', 'xxxid')
 
-        response = DataAccessLayer.getGeometryData(request)
+        beginRange = datetime.utcnow() - timedelta(hours=1)
+        endRange = datetime.utcnow()
+        timerange = TimeRange(beginRange, endRange)
 
-        warningStr = ''
-        parameters = {}
-        for x in request.getParameters():
-            parameters[x] = np.array([])
+        response = DataAccessLayer.getGeometryData(request, timerange)
+
         geometries=np.array([])
-        siteid=np.array([])
-        period=np.array([])
-        reftime=np.array([])
-
         for ob in response:
-            for parm in parameters:
-                parameters[parm] = np.append(parameters[parm],ob.getString(parm))
             geometries = np.append(geometries,ob.getGeometry())
-            siteid = np.append(siteid,str(ob.getLocationName()))
-            period = np.append(period,ob.getDataTime().getValidPeriod())
-            reftime = np.append(reftime,ob.getDataTime().getRefTime())
-
-        warningStr += str(siteid) +", "+ str(period) + ", " + str(reftime)
-
-
+            siteid = str(ob.getLocationName())
+            period = ob.getDataTime().getValidPeriod()
+            reftime = ob.getDataTime().getRefTime()
 
         if not response:
-            productList += product_status('red', product + ": "+ str(len(response)) + " records ", 'None')
+            productList += product_status('red', product, 'None')
         else:
             utc = datetime.utcnow()
-            times = DataAccessLayer.getAvailableTimes(request)
-            utc_str = str(datetime.utcfromtimestamp(int(times[-1].getRefTime().getTime()/1000)))
+            utc_str = datetime.strptime(str(reftime),'%Y-%m-%d %H:%M:%S.%f')
             try:
-                hourdiff = utc - datetime.strptime(str(times[-1]),'%Y-%m-%d %H:%M:%S')
+                hourdiff = utc - datetime.strptime(str(reftime),'%Y-%m-%d %H:%M:%S')
             except:
-                hourdiff = utc - datetime.strptime(str(times[-1]),'%Y-%m-%d %H:%M:%S.%f')
+                hourdiff = utc - datetime.strptime(str(reftime),'%Y-%m-%d %H:%M:%S.%f')
             hours,days = hourdiff.seconds/3600,hourdiff.days
             minute = str((hourdiff.seconds - (3600 * hours)) / 60)
             offsetStr = ''
@@ -568,7 +561,7 @@ class Edex:
             if hours > 1:
                 color="orange"
 
-            product_string = product + product_count_label(len(response)) + warningStr
+            product_string = product + " <div class='ui label mini'>" + str(len(response)) + " products (last hr)</div>"
             productList += product_status(color, product_string, offsetStr, utc_str)
 
 
