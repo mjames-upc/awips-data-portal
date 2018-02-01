@@ -309,7 +309,7 @@ class Edex:
         DataAccessLayer.changeEDEXHost(server)
         productList = """<h1 class='ui dividing header'>"""+server+"""</h1><div class="ui divided list">"""
 
-        gridnames=["NCWF","HRRR","GFS","NAM12","CMC","MRMS_0500"]
+        gridnames=["NCWF","HRRR","GFS","NAM12","CMC","MRMS_0500","MRMS_1000"]
 
         request = DataAccessLayer.newDataRequest()
         request.setDatatype("grid")
@@ -322,59 +322,76 @@ class Edex:
             stringReturn = createpage(id,'','','',content,serverSelect,'')
             return stringReturn
 
-        productList += """
-                <div class="item">
-                    <img class="ui avatar image" src="/images/model.png">
-                    <div class="content">
-                        <h1 class="ui header">Gridded Data</h1>
-                        <div class="list">"""
+        #if not available_grids:
+        #    available_grids = gridnames
 
-        for grid in gridnames:
-            request.setLocationNames(grid)
-            cycles = DataAccessLayer.getAvailableTimes(request, True)
-            times = DataAccessLayer.getAvailableTimes(request)
-            if not cycles:
-                productList += product_status('red', str(grid), 'None')
-            else:
-                fcstRun = DataAccessLayer.getForecastRun(cycles[-1], times)
-                utc_now  = datetime.utcnow()
-                utc_prod = datetime.utcfromtimestamp(int(fcstRun[0].getRefTime().getTime()/1000))
-                ddiff = utc_now-utc_prod
-                hours = ddiff.seconds / 3600
-                days = ddiff.days
-                minute = str((ddiff.seconds - (3600 * hours)) / 60)
-                hrdiff = ''
-                if hours > 0:
-                    hrdiff += str(hours) + " hr"
-                hrdiff += str(minute) + " min ago"
-                if days > 1:
-                    hrdiff = str(days) + " days ago"
-                productList += """
-                        <div class="item">
-                          <div class="content">
-                            <div class="ui header">"""+ str(grid) + """</div>
-                            <h4 class="ui green header">"""+ str(hrdiff) + """</h4>
-                          </div>
-                        </div>"""
+        productList += """<table class="ui single line table">
 
-        productList += """</div></div></div>"""
+                <tr>
+                    <td colspan=3>
+                        <h2 class="ui header">
+                          <img src="/images/model.png" class="ui circular image">
+                          Gridded Data
+                        </h2>
+                    </td>
+                </tr>
+                """
+        for grid in available_grids:
+            if not pattern.match(grid):
+                request.setLocationNames(grid)
+                cycles = DataAccessLayer.getAvailableTimes(request, True)
+                times = DataAccessLayer.getAvailableTimes(request)
+                if not cycles:
+                    productList += product_status('red', str(grid), 'None')
+                else:
+                    utc_now  = datetime.utcnow()
+                    utc_prod = datetime.utcfromtimestamp(int(cycles[-1].getRefTime().getTime()/1000))
+                    utc_str = str(utc_prod)
+
+                    ddiff = utc_now-utc_prod
+                    hours = ddiff.seconds / 3600
+                    days = ddiff.days
+                    minute = str((ddiff.seconds - (3600 * hours)) / 60)
+                    hrdiff = ''
+                    if hours > 0:
+                        hrdiff += str(hours) + " hr"
+                    hrdiff += str(minute) + " min ago"
+                    if days > 1:
+                        hrdiff = str(days) + " days ago"
+                    color="green"
+                    if hours > 10 or days > 1:
+                        color="orange"
+                    productList += product_status(color, str(grid), str(hrdiff), utc_str)
+
 
 
         # NEXRAD
 
         productList += """
-                <div class="item">
-                    <img class="ui avatar image" src="/images/radar.png">
-                    <div class="content">
-                        <h1 class="ui header">Radar Products</h1>
-                        <div class="list">"""
+                <tr>
+                    <td colspan=3>
+                        <h2 class="ui header">
+                          <img src="/images/radar.png" class="ui circular image">
+                          Radar Products
+                        </h2>
+                    </td>
+                </tr>"""
 
         request = DataAccessLayer.newDataRequest()
         request.setDatatype("radar")
         site="kftg"
         request.setLocationNames(site)
+
+        wsrProducts = DataAccessLayer.getAvailableParameters(request)
+        wsrProducts.sort()
+
+        request.setParameters('94')
+
         datatimes = DataAccessLayer.getAvailableTimes(request)
         dateString = str(datatimes[-1])
+
+        utc_str = str(datetime.utcfromtimestamp(int(datatimes[-1].getRefTime().getTime()/1000)))
+
         ddiff = datetime.utcnow() - datetime.strptime(dateString, '%Y-%m-%d %H:%M:%S')
         hours = ddiff.seconds / 3600
         days = ddiff.days
@@ -388,20 +405,27 @@ class Edex:
         color='green'
         if hours > 1:
             color='orange'
-        productList += product_status(color, str(site).upper() + " Level 3", str(hrdiff))
+
+        product_string = str(site).upper() + " <div class='ui label mini'>" + str(len(wsrProducts)) + " products</div>"
+
+        productList += product_status(color, product_string, str(hrdiff), utc_str)
 
         sect = "NEXRCOMP"
         request = DataAccessLayer.newDataRequest()
         request.setDatatype("satellite")
         request.setLocationNames(sect)
-        nexradProducts = DataAccessLayer.getAvailableParameters(request)
-        nexradProducts.sort()
-        if not nexradProducts:
+        nexrcompProducts = DataAccessLayer.getAvailableParameters(request)
+        nexrcompProducts.sort()
+        if not nexrcompProducts:
             productList += product_status('red', sect, 'None') + '</div></div></div>'
         else:
-            request.setParameters(nexradProducts[0])
+            request.setParameters(nexrcompProducts[0])
             utc = datetime.utcnow()
             times = DataAccessLayer.getAvailableTimes(request)
+
+            utc_str = str(datetime.utcfromtimestamp(int(times[-1].getRefTime().getTime()/1000)))
+
+
             hourdiff = utc - datetime.strptime(str(times[-1]),'%Y-%m-%d %H:%M:%S')
             hours,days = hourdiff.seconds/3600,hourdiff.days
             minute = str((hourdiff.seconds - (3600 * hours)) / 60)
@@ -414,101 +438,68 @@ class Edex:
             color="green"
             if hours > 1:
                 color="orange"
-            productList += product_status(color, sect + " ("+ nexradProducts[0] + ")", offsetStr)
+
+            product_string = sect + " <div class='ui label mini'>" + str(len(nexrcompProducts)) + " products</div>"
+
+            productList += product_status(color, product_string, offsetStr, utc_str)
 
 
-        productList += '</div></div></div>'
 
         # Satellite
 
         productList += """
-                        <div class="item">
-                            <img class="ui avatar image" src="/images/satellite.png">
-                            <div class="content">
-                                <h1 class="ui header">Satellite Imagery</h1>
-                                <div class="list">"""
+                <tr>
+                    <td colspan=3>
+                        <h2 class="ui header">
+                          <img src="/images/satellite.png" class="ui circular image">
+                          Satellite Imagery
+                        </h2>
+                    </td>
+                </tr>"""
 
-        sect = "ECONUS"
         request = DataAccessLayer.newDataRequest()
         request.setDatatype("satellite")
-        request.setLocationNames(sect)
-        availableProducts = DataAccessLayer.getAvailableParameters(request)
-        availableProducts.sort()
-        if not availableProducts:
-            productList += product_status('red', sect, 'None')
-        else:
-            prod = availableProducts[-1]
-            request.setParameters(prod)
-            utc = datetime.utcnow()
-            times = DataAccessLayer.getAvailableTimes(request)
-            hourdiff = utc - datetime.strptime(str(times[-1]),'%Y-%m-%d %H:%M:%S.%f')
-            hours,days = hourdiff.seconds/3600,hourdiff.days
-            minute = str((hourdiff.seconds - (3600 * hours)) / 60)
-            offsetStr = ''
-            if hours > 0:
-                offsetStr += str(hours) + "hr "
-            offsetStr += str(minute) + "min ago"
-            if days > 1:
-                offsetStr = str(days) + " days ago"
-            color="green"
-            if hours > 1:
-                color="orange"
-            productList += product_status(color, sect, offsetStr)
 
-        sect="West CONUS"
-        request = DataAccessLayer.newDataRequest()
-        request.setDatatype("satellite")
-        request.setLocationNames(sect)
-        availableProducts = DataAccessLayer.getAvailableParameters(request)
-        availableProducts.sort()
-        if not availableProducts:
-            productList += product_status('red', sect, 'None')
-        else:
-            request.setParameters('Imager 11 micron IR')
-            utc = datetime.utcnow()
-            times = DataAccessLayer.getAvailableTimes(request)
-            hourdiff = utc - datetime.strptime(str(times[-1]),'%Y-%m-%d %H:%M:%S')
-            hours,days = hourdiff.seconds/3600,hourdiff.days
-            minute = str((hourdiff.seconds - (3600 * hours)) / 60)
-            offsetStr = ''
-            if hours > 0:
-                offsetStr += str(hours) + "hr "
-            offsetStr += str(minute) + "min ago"
-            if days > 1:
-                offsetStr = str(days) + " days ago"
-            color="green"
-            if hours > 1:
-                color="orange"
-            productList += product_status(color, sect, offsetStr)
+        availableSectors = DataAccessLayer.getAvailableLocationNames(request)
+        availableSectors.sort()
+        availableSectors.remove('NEXRCOMP')
 
-        sect="Global"
-        request = DataAccessLayer.newDataRequest()
-        request.setDatatype("satellite")
-        request.setLocationNames(sect)
-        availableProducts = DataAccessLayer.getAvailableParameters(request)
-        availableProducts.sort()
-        if not availableProducts:
-            productList += product_status('red', sect + " (Uniwisc)", 'None')
-        else:
-            request.setParameters('Imager 11 micron IR')
-            utc = datetime.utcnow()
-            times = DataAccessLayer.getAvailableTimes(request)
-            hourdiff = utc - datetime.strptime(str(times[-1]),'%Y-%m-%d %H:%M:%S')
-            hours,days = hourdiff.seconds/3600,hourdiff.days
-            minute = str((hourdiff.seconds - (3600 * hours)) / 60)
-            offsetStr = ''
-            if hours > 0:
-                offsetStr += str(hours) + "hr "
-            offsetStr += str(minute) + "min ago"
-            if days > 1:
-                offsetStr = str(days) + " days ago"
-            color="green"
-            if hours > 1:
-                color="orange"
-            productList += product_status(color, sect + " (Uniwisc)", offsetStr)
+        for sect in availableSectors:
+            request = DataAccessLayer.newDataRequest()
+            request.setDatatype("satellite")
+            request.setLocationNames(sect)
+            availableProducts = DataAccessLayer.getAvailableParameters(request)
+            availableProducts.sort()
+            if not availableProducts:
+                productList += product_status('red', sect, 'None')
+            else:
+                request.setParameters(availableProducts[0])
+                utc = datetime.utcnow()
+                times = DataAccessLayer.getAvailableTimes(request)
+                utc_str = str(datetime.utcfromtimestamp(int(times[-1].getRefTime().getTime()/1000)))
+                try:
+                    hourdiff = utc - datetime.strptime(str(times[-1]),'%Y-%m-%d %H:%M:%S')
+                except:
+                    hourdiff = utc - datetime.strptime(str(times[-1]),'%Y-%m-%d %H:%M:%S.%f')
+                hours,days = hourdiff.seconds/3600,hourdiff.days
+                minute = str((hourdiff.seconds - (3600 * hours)) / 60)
+                offsetStr = ''
+                if hours > 0:
+                    offsetStr += str(hours) + "hr "
+                offsetStr += str(minute) + "min ago"
+                if days > 1:
+                    offsetStr = str(days) + " days ago"
+                color="green"
+                if hours > 1:
+                    color="orange"
+
+                product_string = sect + " <div class='ui label mini'>" + str(len(availableProducts)) + " products</div>"
+                productList += product_status(color, product_string, offsetStr, utc_str)
 
 
-        productList += '</div></div></div></div>'
+
+
+        productList += """</table></div>"""
 
         renderHtml = "<title>AWIPS Data Portal - Inventory</title>" + productList
 
@@ -1319,16 +1310,28 @@ def createpage(name, parmname, level, time, mainContent, sideContent, parmlist):
                        )
 
 
-def product_status(color='black', product='', time=''):
+def product_status(color='black', product='', time='', utc=''):
     icon=''
     if color in ('red','orange'):
         icon=" <i class='attention icon'></i>"
-    return """<div class="item">
+    return """
+          <tr><td>
+            <div class="item">
               <div class="content">
-                <div class="ui header">"""+ product + """</div>
-                <h4 class="ui """+color+""" header">"""+ time + icon +"""</h4>
+                """+ product + """
               </div>
-            </div>"""
+            </div>
+          </td>
+          <td>
+             <span style="color:"""+color+""";">"""+ time + icon +"""</span>
+          </td>
+          <td>
+             <div class="small">""" + str(utc) + """</div>
+          </td></tr>
+            """
+
+
+
 
 
 
@@ -1350,7 +1353,7 @@ if __name__ == '__main__':
     env = Environment(loader=FileSystemLoader('templates'))
 
     # exclude list
-    pattern = re.compile("^((ECMF|UKMET|QPE|MPE|FFG|GribModel|HFR|RFCqpf|EPAC40))")
+    pattern = re.compile("^((ECMF|UKMET|MPE|FFG|GribModel|HFR|EPAC40))")
 
     DataAccessLayer.changeEDEXHost(server)
 
