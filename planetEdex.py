@@ -967,6 +967,8 @@ request.setLevels(levels[0])</code></pre>
         from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
         import numpy as np
 
+        plt.switch_backend('agg')
+
         DataAccessLayer.changeEDEXHost(server)
         request = DataAccessLayer.newDataRequest()
         request.setDatatype("grid")
