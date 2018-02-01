@@ -388,27 +388,27 @@ class Edex:
         request.setParameters('94')
 
         datatimes = DataAccessLayer.getAvailableTimes(request)
-        dateString = str(datatimes[-1])
 
-        utc_str = str(datetime.utcfromtimestamp(int(datatimes[-1].getRefTime().getTime()/1000)))
-
-        ddiff = datetime.utcnow() - datetime.strptime(dateString, '%Y-%m-%d %H:%M:%S')
-        hours = ddiff.seconds / 3600
-        days = ddiff.days
-        minute = str((ddiff.seconds - (3600 * hours)) / 60)
-        hrdiff = ''
-        if hours > 0:
-            hrdiff += str(hours) + "hr "
-        hrdiff += str(minute) + "m ago"
-        if days > 1:
-            hrdiff = str(days) + " days ago"
-        color='green'
-        if hours > 1:
-            color='orange'
-
-        product_string = str(site).upper() + " <div class='ui label mini'>" + str(len(wsrProducts)) + " products</div>"
-
-        productList += product_status(color, product_string, str(hrdiff), utc_str)
+        if not datatimes:
+            productList += product_status('red', str(site).upper(), 'None')
+        else:
+            dateString = str(datatimes[-1])
+            utc_str = str(datetime.utcfromtimestamp(int(datatimes[-1].getRefTime().getTime()/1000)))
+            ddiff = datetime.utcnow() - datetime.strptime(dateString, '%Y-%m-%d %H:%M:%S')
+            hours = ddiff.seconds / 3600
+            days = ddiff.days
+            minute = str((ddiff.seconds - (3600 * hours)) / 60)
+            hrdiff = ''
+            if hours > 0:
+                hrdiff += str(hours) + "hr "
+            hrdiff += str(minute) + "m ago"
+            if days > 1:
+                hrdiff = str(days) + " days ago"
+            color='green'
+            if hours > 1:
+                color='orange'
+            product_string = str(site).upper() + " <div class='ui label mini'>" + str(len(wsrProducts)) + " products</div>"
+            productList += product_status(color, product_string, str(hrdiff), utc_str)
 
         sect = "NEXRCOMP"
         request = DataAccessLayer.newDataRequest()
@@ -1348,7 +1348,7 @@ def RepresentsInt(s):
 if __name__ == '__main__':
 
     server="edex-cloud.unidata.ucar.edu"
-    server="149.165.157.49"
+    #server="149.165.157.49"
 
     env = Environment(loader=FileSystemLoader('templates'))
 
