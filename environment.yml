@@ -14,5 +14,6 @@ dependencies:
   - cherrypy
   - jinja2
   - pip
+  - psycopg2
   - pip:
     - python-awips
