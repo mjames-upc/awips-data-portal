@@ -198,7 +198,7 @@ class Edex:
         cartopyImage = '<img style="border: 0;" src="data:image/png;base64,'+sio.getvalue().encode("base64").strip()+'"/>'
 
         # Build Dropdowns
-        prodString = '<table class="ui single line table"><thead><tr><th>Product</th><th>Description</th><th>Unit</th><th>DAF</th></tr></thead>'
+        prodString = '<table class="ui single line table"><thead><tr><th>Product</th><th>Description</th><th>Unit</th><th>API</th></tr></thead>'
         siteSelect = '<select class="ui select dropdown" id="site-select">'
         for radarsite in availableSites:
             siteSelect += '<option value="%s">%s</option>' % (radarsite, radarsite.upper())
@@ -221,12 +221,12 @@ class Edex:
                                 'href="/json_radar?id=' + id + '&product=' + prod + '">' \
                                  '<i class="code icon small"></i></a></td></tr>'
 
-                prodString += '''<tr id="''' + str(idhash) + '''" class="transition hidden"><td colspan=5><div class="ui instructive bottom attached segment">
-    <pre><code class="code xml">request = DataAccessLayer.newDataRequest()
-    request.setDatatype("radar")
-    request.setLocationNames("''' + id + '''")
-    request.setParameters("''' + prod + '''")</code></pre>
-    </div></td></tr>'''
+                prodString += """<tr id=""" + str(idhash) + """ class="transition hidden"><td colspan=5><div class="ui instructive bottom attached segment">
+    <pre class="code xml">request = DataAccessLayer.newDataRequest()
+request.setDatatype("radar")
+request.setLocationNames("""" + id + """")
+request.setParameters("""" + prod + """")</pre>
+    </div></td></tr>"""
 
         prodSelect += '</select>'
         prodString += '</table>'
@@ -273,12 +273,13 @@ class Edex:
 
     @cherrypy.expose
     def inventory(self, server="edex-cloud.unidata.ucar.edu"):
+
         from datetime import datetime, timedelta
 
         edex_server = [
             'edextest.unidata.ucar.edu',
-            '149.165.156.89',
-            '149.165.157.49'
+            'js-156-89.jetstream-cloud.org',
+            'js-157-49.jetstream-cloud.org'
             ]
         edex_desc = [
             'onsite backup',
@@ -286,7 +287,7 @@ class Edex:
             'edex-cloud2'
         ]
 
-        serverSelect = '<div class="ui raised segments">'
+        serverSelect = '<div class="ui raised segments sticky fixed">'
 
         for addr, desc in zip(edex_server, edex_desc):
             try:
@@ -330,7 +331,7 @@ class Edex:
                 <tr>
                     <td colspan=3>
                         <h2 class="ui header">
-                          <img src="/images/model.png" class="ui circular image">
+                          <img src="/images/grid.png" class="ui circular image">
                           Gridded Data
                         </h2>
                     </td>
@@ -527,7 +528,7 @@ class Edex:
                               'purgetime', 'rawmessage', 'seg', 'segtext', 'sig',
                               'starttime', 'ugczones', 'vtecstr', 'wmoid', 'xxxid')
 
-        beginRange = datetime.utcnow() - timedelta(hours=1)
+        beginRange = datetime.utcnow() - timedelta(hours=3)
         endRange = datetime.utcnow()
         timerange = TimeRange(beginRange, endRange)
 
@@ -561,7 +562,7 @@ class Edex:
             if hours > 1:
                 color="orange"
 
-            product_string = product + " <div class='ui label mini'>" + str(len(response)) + " products (last hr)</div>"
+            product_string = product + " <div class='ui label mini'>" + str(len(response)) + " products (last 3 hr)</div>"
             productList += product_status(color, product_string, offsetStr, utc_str)
 
 
@@ -581,8 +582,9 @@ class Edex:
 
 
     @cherrypy.expose
-    def grid(self, name="RAP13", parm="", level=""):
+    def grid(self, name="", parm="", level="", title="Gridded Data"):
 
+        from datetime import datetime
         request = DataAccessLayer.newDataRequest()
         request.setDatatype("grid")
 
@@ -590,7 +592,79 @@ class Edex:
         available_grids = DataAccessLayer.getAvailableLocationNames(request)
         available_grids.sort()
 
-        if name == "": name=available_grids[-1]
+        if name == "":
+            DataAccessLayer.changeEDEXHost(server)
+            productList = """<div class="ui divided list">"""
+
+            gridnames=["NCWF","HRRR","GFS","NAM12","CMC","MRMS_0500","MRMS_1000"]
+
+            request = DataAccessLayer.newDataRequest()
+            request.setDatatype("grid")
+
+            try:
+                available_grids = DataAccessLayer.getAvailableLocationNames(request)
+                available_grids.sort()
+            except:
+                content = "<div class='ui negative message'><p class='ui error red'>Could not connect to "+server+"</p></div>"
+                stringReturn = createpage(id,'','','',content,serverSelect,'')
+                return stringReturn
+
+            if not available_grids:
+                available_grids = gridnames
+
+            productList += """
+                <h2 class="ui header">
+                  <img src="/images/grid.png" class="ui circular image">
+                  Gridded Data
+                </h2>
+                <div class="ui cards">
+                    """
+            for grid in available_grids:
+                if not pattern.match(grid):
+                    request.setLocationNames(grid)
+                    cycles = DataAccessLayer.getAvailableTimes(request, True)
+                    times = DataAccessLayer.getAvailableTimes(request)
+                    if not cycles:
+                        productList += ''
+                    else:
+                        utc_now  = datetime.utcnow()
+                        utc_prod = datetime.utcfromtimestamp(int(cycles[-1].getRefTime().getTime()/1000))
+                        utc_str = str(utc_prod)
+
+                        ddiff = utc_now-utc_prod
+                        hours = ddiff.seconds / 3600
+                        days = ddiff.days
+                        minute = str((ddiff.seconds - (3600 * hours)) / 60)
+                        hrdiff = ''
+                        if hours > 0:
+                            hrdiff += str(hours) + " hr"
+                        hrdiff += str(minute) + " min ago"
+                        if days > 1:
+                            hrdiff = str(days) + " days ago"
+                        color="green"
+                        if not days > 1:
+                            productList += product_card('grid', str(grid), str(hrdiff), utc_str)
+
+
+            productList += """</table></div>"""
+
+            renderHtml = "<title>AWIPS Data Portal - "+ title +"</title>" + productList
+
+            stringReturn = createpage(id,'','','',renderHtml,'','')
+            return stringReturn
+
+
+
+
+
+
+
+
+        import cartopy.crs as ccrs
+        import matplotlib.pyplot as plt
+        from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+        import numpy as np
+
         request.setLocationNames(name)
 
         # Grid Parameters
@@ -601,25 +675,57 @@ class Edex:
             stringReturn = createpage(name,"","","",server+": no grid records found for "+name,"","")
             return stringReturn	
 	
-        if parm == "": parm = availableParms[-1]
-        request.setParameters(str(parm))
+        if parm == "":
+            request.setParameters(str(availableParms[0]))
+        else:
+            request.setParameters(str(parm))
 
         # Grid Levels
         availableLevels = DataAccessLayer.getAvailableLevels(request)
         availableLevels.sort()
-        if level == "": level = availableLevels[-1]
-        request.setLevels(str(level))
+        if level == "":
+            request.setLevels(str(availableLevels[0]))
+        else:
+            request.setLevels(str(level))
 
         # Build Dropdowns
-        parmString = '<table class="ui single line table"><thead><tr><th>Parameter</th><th>Description</th><th>Unit</th><th>DAF</th></tr></thead>'
+
+        parmBlock = ''
+        parmTableHeader = """
+            <table class="ui selectable single line table">
+                <thead>
+                    <tr>
+                        <th>Grid Parameter</th>
+                        <th>Description</th>
+                        <th>Unit</th>
+                        <th>API</th>
+                    </tr>
+                </thead>"""
+        parmTable = parmTableHeader
+
         lvlString = ''
-        gridSelect = '<select class="ui select dropdown" id="grid-select">'
+
+        gridSelect = """
+            <div class="ui fluid search selection dropdown grid">
+                <input type="hidden" id="grid-select" name="grid">
+                <i class="dropdown icon"></i>
+                <div class="default text">Select Grid</div>
+                <div class="menu">"""
+
         for grid in available_grids:
             grid = grid.decode('utf-8')
-            if not pattern.match(grid): gridSelect += '<option value="'+grid+'">'+grid+'</option>'
-        gridSelect += '</select>'
+            if not pattern.match(grid): gridSelect += '<div class="item" data-value="'+grid+'">'+grid+'</div>'
+
+        gridSelect += """</div></div>"""
+
         parmMenu = ''
-        parmSelect = '<select class="ui select dropdown" id="parm-select">'
+        parmSelect = """
+                    <div class="ui fluid search selection dropdown parm">
+                        <input type="hidden" id="parm-select" name="grid">
+                        <i class="dropdown icon"></i>
+                        <div class="default text">Parameter</div>
+                        <div class="menu">"""
+
         for gridparm in availableParms:
             gridparm = gridparm.decode('utf-8')
             parmDescription = ''
@@ -629,32 +735,60 @@ class Edex:
                 replaced = re.sub('[0-9]{1,2}hr$', '', gridparm)
                 if item == replaced:
                     parmDescription = parm_dict[item][0]
-                    parmUnit = parm_dict[item][1]
-            parmSelect += '<option value="%s">%s - %s</option>' % (gridparm, gridparm, parmDescription)
+                    if len(parm_dict[item]) > 1:
+                        parmUnit = parm_dict[item][1]
+            parmSelect += '<div class="item" data-value="'+gridparm+'">'+gridparm+' - '+parmDescription+'</div>'
             parmActiveClass = ''
             if gridparm == parm:
                 parmActiveClass = 'active'
 
             if parmDescription != "":
                 parmMenu += '<a class="item %s" href="/grid?name=%s&parm=%s"><div class="small ui blue label">%s</div> %s</a>' % (parmActiveClass, name, gridparm,gridparm, parmDescription)
-            parmString += '<tr><td><a href="/grid?name='+name+'&parm='+ gridparm +'"><b>' + gridparm + '</b></a></td>' \
-                '<td>' + parmDescription + '</td>' \
-                '<td><div class="small ui label">' + parmUnit + '</div></td>' \
-                '<td><a class="showcode circular ui icon basic button" name="'+str(idhash)+'" ' \
-                            'href="/json?name=' + name + '&parm=' + gridparm + '">' \
-                             '<i class="code icon small"></i></a></td></tr>'
 
-            parmString += '''<tr id="''' + str(idhash) + '''" class="transition hidden"><td colspan=5><div class="ui instructive bottom attached segment">
-<pre><code class="code xml">request = DataAccessLayer.newDataRequest()
+
+
+            if str(gridparm) == str(parm):
+
+                parmBlock = '<tr><td><a href="/grid?name='+name+'&parm='+ gridparm +'"><b>' + gridparm + '</b></a></td>' \
+                        '<td>' + parmDescription + '</td>' \
+                        '<td><div class="small ui label">' + parmUnit + '</div></td>' \
+                        '<td><a class="showcode circular ui icon basic button" name="'+str(idhash)+'" ' \
+                                    'href="/json?name=' + name + '&parm=' + gridparm + '">' \
+                                     '<i class="code icon small"></i></a></td></tr>'
+
+                parmBlock = parmTableHeader + parmBlock + """
+                        <tr id=""" + str(idhash) + """ class="transition">
+                            <td colspan=5>
+                                <div class="ui instructive bottom attached segment">
+<pre class="code xml">request = DataAccessLayer.newDataRequest()
 request.setDatatype("grid")
-request.setLocationNames("''' + name + '''")
-request.setParameters("''' + gridparm + '''")
+request.setLocationNames(\"""" + name + """\")
+request.setParameters(\"""" + gridparm + """\")
 levels = DataAccessLayer.getAvailableLevels(request)
-request.setLevels(levels[0])</code></pre>
-</div></td></tr>'''
+request.setLevels(levels[0])</pre>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>"""
 
-        parmSelect += '</select>'
-        parmString += '</table>'
+            else:
+                parmTable += '<tr><td><a href="/grid?name='+name+'&parm='+ gridparm +'"><b>' + gridparm + '</b></a></td>' \
+                                '<td>' + parmDescription + '</td>' \
+                                '<td><div class="small ui label">' + parmUnit + '</div></td>' \
+                                '<td><a class="showcode circular ui icon basic button" name="'+str(idhash)+'" ' \
+                                            'href="/json?name=' + name + '&parm=' + gridparm + '">' \
+                                             '<i class="code icon small"></i></a></td></tr>'
+                parmTable += """<tr id=""" + str(idhash) + """ class="transition hidden"><td colspan=5><div class="ui instructive bottom attached segment">
+<pre class="code xml">request = DataAccessLayer.newDataRequest()
+request.setDatatype("grid")
+request.setLocationNames(\"""" + name + """\")
+request.setParameters(\"""" + gridparm + """\")
+levels = DataAccessLayer.getAvailableLevels(request)
+request.setLevels(levels[0])</pre>
+</div></td></tr>"""
+
+        parmSelect += """</div></div>"""
+        parmTable += '</table>'
 
         parmDescription = ''
         parmUnit = ''
@@ -664,19 +798,66 @@ request.setLevels(levels[0])</code></pre>
                 parmDescription = parm_dict[item][0]
                 parmUnit = parm_dict[item][1]
 
-        levelSelect = '<select class="ui select dropdown" id="level-select">'
+        levelSelect = """
+                    <div class="ui fluid search selection dropdown level">
+                        <input type="hidden" id="level-select" name="grid">
+                        <i class="dropdown icon"></i>
+                        <div class="default text">Level</div>
+                        <div class="menu">"""
+
         for llevel in availableLevels:
-            levelSelect += '<option value="%s">%s</option>' % (llevel, llevel)
-        levelSelect += '</select>'
+            levelSelect += '<div class="item" data-value="'+str(llevel)+'">'+str(llevel)+'</div>'
+        levelSelect += '</div></div>'
+
+        if not parm: parmSelect = ''
+        if not level: levelSelect = ''
+
 
         # Forecast Cycles
         cycles = DataAccessLayer.getAvailableTimes(request, True)
         times = DataAccessLayer.getAvailableTimes(request)
         latest_run = DataAccessLayer.getForecastRun(cycles[-1], times)
 
+        def make_map(bbox, projection=ccrs.PlateCarree()):
+            fig, ax = plt.subplots(subplot_kw=dict(projection=projection))
+            fig.tight_layout()
+            ax.set_extent(bbox)
+            ax.coastlines(resolution='50m')
+            gl = ax.gridlines(draw_labels=True)
+            gl.xlabels_top = gl.ylabels_right = False
+            #gl.xformatter = LONGITUDE_FORMATTER
+            #gl.yformatter = LATITUDE_FORMATTER
+            return fig, ax
+
+        if cycles:
+            response = DataAccessLayer.getGridData(request, [latest_run[0]])
+            grid = response[0]
+            data = grid.getRawData()
+            lons, lats = grid.getLatLonCoords()
+            bbox = [lons.min(), lons.max(), lats.min(), lats.max()]
+
+            fig, ax = make_map(bbox=bbox)
+            cs = ax.pcolormesh(lons, lats, data, cmap=plt.get_cmap('rainbow'))
+            cbar = fig.colorbar(cs, extend='both', shrink=0.5, orientation='horizontal')
+            cbar.set_label(str(grid.getLocationName()) +" " \
+                    + str(grid.getLevel()) + " " \
+                    + str(grid.getParameter()) + " " \
+                    + "(" + str(grid.getUnit()) + ") " \
+                    + " valid " + str(grid.getDataTime().getRefTime()) )
+
+            # Write image
+            format = "png"
+            sio = cStringIO.StringIO()
+            plt.savefig(sio, format=format)
+            print("Content-Type: image/%s\n" % format)
+            sys.stdout.write(sio.getvalue())
+            cartopyImage = '<img style="border: 0;" src="data:image/png;base64,'+sio.getvalue().encode("base64").strip()+'"/>'
+
+
+
         # Last Run
         dateString = str(latest_run[0:1][0])[0:19]
-        hourdiff = datetime.datetime.utcnow() - datetime.datetime.strptime(dateString, '%Y-%m-%d %H:%M:%S')
+        hourdiff = datetime.utcnow() - datetime.strptime(dateString, '%Y-%m-%d %H:%M:%S')
         hours = hourdiff.seconds / 3600  # integer
         days = hourdiff.days
         minute = str((hourdiff.seconds - (3600 * hours)) / 60)
@@ -696,28 +877,48 @@ request.setLevels(levels[0])</code></pre>
                 #gridname = info[3]
                 centername = wmo_centers[centerid]
                 gridnav = navigation[gridid]
-                grid_size = gridnav[1] + "x" + gridnav[2]
+                grid_size = gridnav[1] + " x " + gridnav[2]
                 grid_res = gridnav[3] +" " + gridnav[5]
 
-        renderHtml =  """<title>AWIPS Data Portal - """+ name +""" Grid - """+parm+"""</title>
+        renderMap = ''
+        mapJs = ''
+        if parm:
+            mapJs = """
+
+                                getGeoJSON('/api?name="""+ name + """&parm="""+parm+"""&level="""+str(level)+"""',function(response) {
+                                    var json = response.json;
+                                    var container = document.getElementById('dsmap');
+                                    var maps = mapConfig(colormaps, container);
+                                    maps.jsonMap.drawImage(json, response.json.metadata);
+                                });
+                                getGeoJSONBounds('/polygon?name="""+ name + """',function(response) {
+                                    var coveragePolygon = response.json;
+                                    var container = document.getElementById('datamap');
+                                    var polygon =  [geoJsonPolygonFeature(coveragePolygon)] ;
+                                    var jsonMap = dataMap.map({
+                                        el: container,
+                                        scrollWheelZoom: false,
+                                        center: {lat: 40, lng: -105}
+                                    }).init().drawPolygon(polygon).zoomToBounds(polygon);
+                                });"""
+            renderMap = """
+                        <div>
+                            <div class="ui top attached tabular menu">
+                              <a class="item active" data-tab="leaflet">Leaflet</a>
+                              <a class="item" data-tab="cartopy">Cartopy</a>
+                            </div>
+                            <div class="ui bottom attached active tab segment" data-tab="leaflet">
+                                <div class="ui segment" id="dsmap"></div>
+                            </div>
+                            <div class="ui bottom attached tab segment" data-tab="cartopy">
+                                <div class="ui segment" id="pymap">"""+ cartopyImage +"""</div>
+                            </div>
+                        </div>"""
+
+        renderHtml =  """<title>AWIPS Data Portal - """+ name +""" """+parm+""" Gridded Data</title>
                 <script type="text/javascript">
-                    var createGeoJSON = function(){
-                        getGeoJSON('/api?name="""+ name + """&parm="""+parm+"""&level="""+str(level)+"""',function(response) {
-                            var json = response.json;
-                            var container = document.getElementById('dsmap');
-                            var maps = mapConfig(colormaps, container);
-                            maps.jsonMap.drawImage(json, response.json.metadata);
-                        });
-                        getGeoJSONBounds('/polygon?name="""+ name + """',function(response) {
-                            var coveragePolygon = response.json;
-                            var container = document.getElementById('datamap');
-                            var polygon =  [geoJsonPolygonFeature(coveragePolygon)] ;
-                            var jsonMap = dataMap.map({
-                                el: container,
-                                scrollWheelZoom: false,
-                                center: {lat: 40, lng: -105}
-                            }).init().drawPolygon(polygon).zoomToBounds(polygon);
-                        });
+                        var createGeoJSON = function(){
+                        """ + mapJs + """
                     }
                 </script>
 
@@ -725,36 +926,46 @@ request.setLevels(levels[0])</code></pre>
                     <div class="left floated column"><h1>"""+ name + """</h1></div>
                  </div>
                 <p>""" + centername[1] + """ &nbsp;<a class="ui tiny label" href="#">""" + centername[0] + """</a></p>
-                <p><b>Last run:</b> """+ dateString + """ (""" + hourdiff + """)</p>
-                <div class="ui divider"></div>
-                <div class="ui segment" id="dsmap"></div>
-                <h2 class="first">"""+name+""" Grid Parameters</h2>
-                <div>"""+ parmString +"""</div>"""
+
+                """+ parmBlock + renderMap + parmTable
+
 
         sideContent = """
-                <div class="ui raised segment">
-                    <div>"""+ gridSelect +"""</div>
-                    <div>"""+ levelSelect +"""</div>
-                    <div>"""+ parmSelect +"""</div>
-                </div>
-                <div class="ui raised segment">
-                    <a class="ui right ribbon label">Projection</a>
+
+                <div class="ui raised segment small">
+                    <a class="ui top right attached label">Grid Info</a>
+
+                    """+ gridSelect + parmSelect + levelSelect +"""
+
+                    <div class="ui middle aligned list">
+                    <div class="item"><b>Last Run</b>
+                        <div class="right floated content">"""+ dateString +"""</div>
+                    </div>
+                    </div>
+
+                    <h5 class="ui horizontal header divider">
+                      <i class="world icon"></i>Projection
+                    </h5>
+
                     <div class="ui middle aligned divided list">
                         <p>""" + gridnav[0] + """</p>
-                        <div class="item"><b>Grid size</b>
-                            <div class="right floated content">""" + grid_size + """</div>
-                        </div>
-                        <div class="item"><b>Resolution</b>
-                            <div class="right floated content">""" + grid_res + """</div>
+                        <div class="item"><b>Source</b>
+                            <div class="right floated content"><a href="#">""" + centername[0] + """</a></div>
                         </div>
                         <div class="item"><b>Center ID</b>
                             <div class="right floated content">""" + centerid + """</div>
                         </div>
-                        <div class="item"><b>Subcenter ID</b>
+                        <div class="item"><b>Subcenter</b>
                             <div class="right floated content">""" + subcenterid + """</div>
                         </div>
                         <div class="item"><b>Grid Number</b>
                             <div class="right floated content">""" + gridid + """</div>
+                        </div>
+                        <div class="item"><b>Resolution</b>
+                            <div class="right floated content">""" + grid_res + """</div>
+                        </div>
+                        <div class="item"><b>Size</b>
+                            <div class="right floated content">""" + grid_size + """</div>
                         </div>
                     </div>
                 </div>
@@ -763,6 +974,58 @@ request.setLevels(levels[0])</code></pre>
 
         stringReturn = createpage(name,parm,str(level),str(latest_run[0]),renderHtml,sideContent, parmMenu)
         return stringReturn
+
+
+
+    ##
+    ## DERIVED PARAMETERS ALL GRIDS
+    ##
+
+    @cherrypy.expose
+    def derived(self, title="Derived Parameters"):
+        from datetime import datetime
+        import numpy as np
+        request = DataAccessLayer.newDataRequest()
+        request.setDatatype("grid")
+        availableParms = DataAccessLayer.getAvailableParameters(request)
+        availableParms.sort()
+        parmTable = """
+            <table class="ui selectable single line table">
+                <thead>
+                    <tr>
+                        <th>Grid Parameter</th>
+                        <th>Description</th>
+                        <th>Unit</th>
+                    </tr>
+                </thead>"""
+        for gridparm in availableParms:
+            gridparm = gridparm.decode('utf-8')
+            parmDescription = ''
+            parmUnit = ''
+            for item in parm_dict:
+                idhash = hash(gridparm)
+                replaced = re.sub('[0-9]{1,2}hr$', '', gridparm)
+                if item == replaced:
+                    parmDescription = parm_dict[item][0]
+                    if len(parm_dict[item]) > 1:
+                        parmUnit = parm_dict[item][1]
+            if parmDescription == "":
+                parmTable += """
+                        <tr>
+                            <td>
+                                <b>""" + gridparm + """</b>
+                            </td>
+                            <td>""" + parmDescription + """</td>
+                            <td><div class="small ui label">""" + parmUnit + """</div></td>
+                        </tr>"""
+        parmTable += "</table>"
+        renderHtml =  """
+                <title>AWIPS Data Portal - """+ title + """</title>
+                <h1>"""+ title + """</h1>"""+ parmTable
+        stringReturn = createpage('','','','',renderHtml,'','')
+        return stringReturn
+
+
 
 
     @cherrypy.expose
@@ -774,12 +1037,12 @@ request.setLevels(levels[0])</code></pre>
         availableLevels = DataAccessLayer.getAvailableLevels(request)
         availableLevels.sort()
         level = str(level)
-        if level == "": level = availableLevels[-1]
+        if level == "": level = availableLevels[0]
         request.setLevels(level)
         cycles = DataAccessLayer.getAvailableTimes(request, True)
         times = DataAccessLayer.getAvailableTimes(request)
         fcstRun = DataAccessLayer.getForecastRun(cycles[-1], times)
-        response = DataAccessLayer.getGridData(request, [fcstRun[-1]])
+        response = DataAccessLayer.getGridData(request, [fcstRun[0]])
         data = response[0].getRawData()
         lons, lats = response[0].getLatLonCoords()
         ngrid = data.shape[1]
@@ -819,16 +1082,18 @@ request.setLevels(levels[0])</code></pre>
         request.setDatatype("grid")
         request.setLocationNames(name)
         request.setParameters(parm)
-        availableLevels = DataAccessLayer.getAvailableLevels(request)
-        availableLevels.sort()
-        level = str(level)
-        if level == "": level = availableLevels[-1]
-        request.setLevels(level)
+
+        if level == "":
+            availableLevels = DataAccessLayer.getAvailableLevels(request)
+            availableLevels.sort()
+            level = availableLevels[0]
+            level = str(level)
+            request.setLevels(level)
 
         cycles = DataAccessLayer.getAvailableTimes(request, True)
         times = DataAccessLayer.getAvailableTimes(request)
         fcstRun = DataAccessLayer.getForecastRun(cycles[-1], times)
-        response = DataAccessLayer.getGridData(request, [fcstRun[-1]])
+        response = DataAccessLayer.getGridData(request, [fcstRun[0]])
 
         data = response[0].getRawData()
         lon, lat = response[0].getLatLonCoords()
@@ -915,7 +1180,7 @@ request.setLevels(levels[0])</code></pre>
         cycles = DataAccessLayer.getAvailableTimes(request, True)
         times = DataAccessLayer.getAvailableTimes(request)
         fcstRun = DataAccessLayer.getForecastRun(cycles[-1], times)
-        response = DataAccessLayer.getGridData(request, [fcstRun[-1]])
+        response = DataAccessLayer.getGridData(request, [fcstRun[0]])
         grid = response[0]
         data = grid.getRawData()
         lons, lats = grid.getLatLonCoords()
@@ -992,7 +1257,7 @@ request.setLevels(levels[0])</code></pre>
 
         if cycles:
             fcstRun = DataAccessLayer.getForecastRun(cycles[-1], times)
-            response = DataAccessLayer.getGridData(request, [fcstRun[-1]])
+            response = DataAccessLayer.getGridData(request, [fcstRun[0]])
             grid = response[0]
             data = grid.getRawData()
             lons, lats = grid.getLatLonCoords()
@@ -1070,7 +1335,7 @@ request.setLevels(levels[0])</code></pre>
                cycles = DataAccessLayer.getAvailableTimes(request, True)
                times = DataAccessLayer.getAvailableTimes(request)
                fcstRun = DataAccessLayer.getForecastRun(cycles[-1], times)
-               response = DataAccessLayer.getGridData(request, [fcstRun[-1]])
+               response = DataAccessLayer.getGridData(request, [fcstRun[0]])
                data = response[0].getRawData()
                lon, lat = response[0].getLatLonCoords()
                datadict = {
@@ -1138,7 +1403,7 @@ request.setLevels(levels[0])</code></pre>
         cycles = DataAccessLayer.getAvailableTimes(request, True)
         times = DataAccessLayer.getAvailableTimes(request)
         fcstRun = DataAccessLayer.getForecastRun(cycles[-1], times)
-        response = DataAccessLayer.getGridData(request, [fcstRun[-1]])
+        response = DataAccessLayer.getGridData(request, [fcstRun[0]])
         grid = response[0]
         data = grid.getRawData()
         lons, lats = grid.getLatLonCoords()
@@ -1246,7 +1511,7 @@ request.setLevels(levels[0])</code></pre>
     # PARM PAGE
 
     @cherrypy.expose
-    def parm(self, parm="", level=""):
+    def parm(self, parm="", level="", title="Parameters"):
         request = DataAccessLayer.newDataRequest()
         request.setDatatype("grid")
         availableParms = DataAccessLayer.getAvailableParameters(request)
@@ -1287,7 +1552,7 @@ request.setLevels(levels[0])</code></pre>
             if not pattern.match(grid) or 1 == 1:
                 gridString += '<a class="parm table" name="'+grid+'"><div class="ui horizontal divider"></div></a><div class="parm table"><h2><a href="/grid?name='+grid+'">'+grid+'</a></h2>'\
                         '<table class="ui single line table"><thead>' \
-                        '<tr><th>Parameter</th><th>Description</th><th>Unit</th><th>Level</th><th>DAF</th></tr>' \
+                        '<tr><th>Parameter</th><th>Description</th><th>Unit</th><th>Level</th><th>API</th></tr>' \
                         '</thead>'
                 request.setLocationNames(grid)
                 availableLevels = DataAccessLayer.getAvailableLevels(request)
@@ -1307,12 +1572,12 @@ request.setLevels(levels[0])</code></pre>
                             '<td><a class="showcode circular ui icon basic button" name="'+str(idhash)+'" ' \
                             'href="/json?name=' + grid + '&parm=' + parm + '&level=' + str(llevel) + '">' \
                              '<i class="code icon small"></i></a></td></tr>'
-                    gridString += '''<tr id="'''+str(idhash)+'''" class="transition hidden"><td colspan=5><div class="ui instructive bottom attached segment"><pre><code id="code'''+str(idhash)+'''" class="code xml">request = DataAccessLayer.newDataRequest()
+                    gridString += """<tr id=""""+str(idhash)+"""" class="transition hidden"><td colspan=5><div class="ui instructive bottom attached segment"><pre><code id="code"""+str(idhash)+"""" class="code xml">request = DataAccessLayer.newDataRequest()
 request.setDatatype("grid")
-request.setLocationNames("'''+grid+'''")
-request.setParameters("'''+parm+'''")
-request.setLevels("'''+str(llevel)+'''")
-</code></pre></div></td></tr>'''
+request.setLocationNames(""""+grid+"""")
+request.setParameters(""""+parm+"""")
+request.setLevels(""""+str(llevel)+"""")
+</code></pre></div></td></tr>"""
 
                 gridString += '</table></div>'
 
@@ -1407,6 +1672,58 @@ def product_status(color='black', product='', time='', utc=''):
              <div class="small">""" + str(utc) + """</div>
           </td></tr>
             """
+
+def product_card(type='grid', product='', time='', utc=''):
+    #icon='<img class="right floated mini ui circular image" src="/images/'+type+'.png">'
+    icon=''
+
+    for gname, info in grid_dictionary.iteritems():
+        print gname, info
+        if gname == product:
+            centerid = info[0]
+            subcenterid = info[1]
+            gridid = info[2]
+            centername = wmo_centers[centerid]
+            gridnav = navigation[gridid]
+            print gridnav
+            grid_size = gridnav[1] + "x" + gridnav[2]
+            grid_res = gridnav[3] +" " + gridnav[5]
+
+
+    product = '<a href="/'+type+'?name='+product+'">'+product+'</a>'
+
+    return """
+          <div class="card">
+              <div class="content">
+                """+ icon +"""
+                <div class="header">
+                  """+ product +"""
+                </div>
+                <div class="meta">
+                  """ + str(utc) + """
+                </div>
+                <div class="description">
+
+                            <p class="mini">""" + gridnav[0] + """</p>
+                            <div class="item"><b>Grid size</b>
+                                <div class="right floated content">""" + grid_size + """</div>
+                            </div>
+                            <div class="item"><b>Resolution</b>
+                                <div class="right floated content">""" + grid_res + """</div>
+                            </div>
+                            <div class="item"><b>Center ID</b>
+                                <div class="right floated content">""" + centerid + """</div>
+                            </div>
+                            <div class="item"><b>Subcenter ID</b>
+                                <div class="right floated content">""" + subcenterid + """</div>
+                            </div>
+                            <div class="item"><b>Grid Number</b>
+                                <div class="right floated content">""" + gridid + """</div>
+                            </div>
+                </div>
+              </div>
+           </div>
+          """
 
 
 def product_count_label(count=0):
