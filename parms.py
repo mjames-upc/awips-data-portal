@@ -1332,6 +1332,264 @@ parm_dict["wxType"] = ["Weather","non-dim"]
 parm_dict["XLONG"] = ["Solar X-ray Flux (XRS Long)","W*m^2"]
 parm_dict["XRAYRAD"] = ["X-Ray Radiance","W*s*r^1*m^2"]
 parm_dict["XSHRT"] = ["Solar X-ray Flux (XRS Short)","W*m^2"]
+parm_dict["36SHRMi"] = ["S=Shear incr &gt; 10kts 3-6km"]
+parm_dict["50dbzZ"] = ["50dbz Hgt for 1 in. Svr Hail","m"]
+parm_dict["Along"] = ["Component Along","m/s"]
+parm_dict["AppT"] = ["Apparent Temperature","F"]
+parm_dict["BRN"] = ["Net Bulk Richardson Number"]
+parm_dict["BRNEHIi"] = ["72% Supercell Cases Tornadic"]
+parm_dict["BRNSHR"] = ["BRN Shear"]
+parm_dict["BdEPT06"] = ["Max ThetaE Difference (3-6km Min minus 0-3km Max)","K"]
+parm_dict["BlkMag"] = ["Bulk Shear Magnitude","m/s"]
+parm_dict["BlkShr"] = ["Bulk Shear Vectors","m/s"]
+parm_dict["CCPerranl"] = ["Cloud Cover Analysis Uncertainty","%"]
+parm_dict["CPr"] = ["Condensation Pressure","hPa"]
+parm_dict["CPrD"] = ["Condensation Pressure Deficit","hPa"]
+parm_dict["CURU"] = ["Cu Rule 0&gt;SKC,-1&gt;SCT,-4&lt;BKN,-6&lt;OVC"]
+parm_dict["CXR"] = ["Comp Refl","dBZ"]
+parm_dict["CapeStk"] = ["Cape Stack"]
+parm_dict["Corf"] = ["Corfidi Vectors","m/s"]
+parm_dict["CorfF"] = ["Corfidi Vectors-Forward Prop","kn"]
+parm_dict["CorfFM"] = ["Corfidi Vec-Forward Mag","kn"]
+parm_dict["CorfM"] = ["Corfidi Vec Mag","kn"]
+parm_dict["CritT1"] = ["Layer Min Temperature -6C, -10C","K"]
+parm_dict["CumNrm"] = ["Normalized Cumulative Shear","/s"]
+parm_dict["CumShr"] = ["Cumulative Shear","m/s"]
+parm_dict["DivF"] = ["Frontogenesis Vector Divergence","K/m/s^2"]
+parm_dict["DivFn"] = ["Fn Vector Divergence","K/m/s^2"]
+parm_dict["DivFs"] = ["Fs Vector Divergence","K/m/s^2"]
+parm_dict["EHI"] = ["Energy Helicity Index"]
+parm_dict["EHI01"] = ["Energy Helicity Index 0-1km","m*m/s*s"]
+parm_dict["EHIi"] = ["Energy Helicity Index"]
+parm_dict["EPTA"] = ["Equiv Pot Temp Adv","K/s"]
+parm_dict["EPTC"] = ["Equiv Pot Temp Conv","K/s"]
+parm_dict["EPTGrd"] = ["Theta-E Gradient","K/m"]
+parm_dict["EPTGrdM"] = ["Theta-E Grad Mag","K/m"]
+parm_dict["EPTs"] = ["Saturated Equiv Pot Temp","K"]
+parm_dict["EPVg"] = ["Geo Equiv Pot Vort","K/hPa/s"]
+parm_dict["EPVs"] = ["Saturated Equiv Pot Vort","K/hPa/s"]
+parm_dict["EPVt1"] = ["Instability is Slantwise=S Upright=U"]
+parm_dict["EPVt2"] = ["EPV* Instability is Slantwise=S Upright=U"]
+parm_dict["ESP"] = ["Enhanced Stretching Potential (ML)"]
+parm_dict["ESP2"] = ["ESP gamma"]
+parm_dict["FVecs"] = ["Frontogenesis Vectors","K/m/s"]
+parm_dict["FeatMot"] = ["Feature Motion","kn"]
+parm_dict["FnVecs"] = ["Fn Vectors","K/m/s"]
+parm_dict["FsVecs"] = ["Fs Vectors","K/m/s"]
+parm_dict["Fzra1"] = ["850-1000 fz thk"]
+parm_dict["GHxSM"] = ["Filtered-500km Hgt","m"]
+parm_dict["GHxSM2"] = ["Filtered-250km Hgt","m"]
+parm_dict["HI"] = ["Haines Index"]
+parm_dict["HI1"] = ["Haines Stab Term"]
+parm_dict["HI3"] = ["HI1 Index Assign"]
+parm_dict["HI4"] = ["Moist Term Index Assign"]
+parm_dict["HeliC"] = ["Helicity (for &gt; 300J/Kg MLCape)"]
+parm_dict["INV"] = ["Height of MaxTw above FrzLvl","ft"]
+parm_dict["IPLayer"] = ["SFC Cold Lyr Probs Toward SLEET","ft"]
+parm_dict["Into"] = ["Component Into","m/s"]
+parm_dict["L-I"] = ["Computed LI","C"]
+parm_dict["LIsfc2x"] = ["Lifted Index Sfc to", "C"]
+parm_dict["LM5"] = ["Bunkers Left-Moving Supercell","m/s"]
+parm_dict["LM6"] = ["Elevated Left-Moving Supercell","m/s"]
+parm_dict["MAXUPHL"] = ["Max Updraft Helicity","m^2/s^2"]
+parm_dict["MAdv"] = ["Moisture Adv","(g/kg)/s"]
+parm_dict["MCon2"] = ["Moisture Flux Div (Conv only)","(g/kg)/s"]
+parm_dict["MLLCL"] = ["ML LCL Height","m"]
+parm_dict["MMP"] = ["MCS Maintenance Probability","%"]
+parm_dict["MSFDi"] = ["Isen Moisture Stability Flux Div","(g*hPa*m)/(kg*K*s^2)"]
+parm_dict["MSFi"] = ["Isentropic Moisture Stability Flux","g*hPa*m/(kg*K*s)"]
+parm_dict["MSFmi"] = ["Isen Moisture Stability Flux Mag","g*hPa*m/(kg*K*s)"]
+parm_dict["MTV"] = ["Moisture Trans Vecs","g*m/(kg*s)"]
+parm_dict["MXDVV"] = ["Max Downdraft Vertical Velocity","m/s" ]
+parm_dict["MXREF"] = ["Max 1hr CAPPI","dB" ]
+parm_dict["MXUVV"] = ["Max Updraft Vertical Velocity","m/s" ]
+parm_dict["MaxDVV"] = ["Max 1hr Downdraft Vertical Velocity","m/s" ]
+parm_dict["MaxREF1hr"] = ["Max Hourly Reflectivity","dBZ"]
+parm_dict["MaxUPHL1hr"] = ["Max Hourly Updft Helicity","m^2/s^2"]
+parm_dict["MaxUVV"] = ["Max 1hr Updraft Vertical Velocity","m/s" ]
+parm_dict["MaxWGS1hr"] = ["Max Hourly Wind Gust","m/s"]
+parm_dict["MaxWHRRR"] = ["Maximum 1hr Wind Gust","m/s"]
+parm_dict["MaxWind1hr"] = ["MaxWind1hr","m/s"]
+parm_dict["Mix1"] = ["850-1000 mx thk"]
+parm_dict["Mmag"] = ["Moisture Trans Mag","g*m/(kg*s)"]
+parm_dict["MpV"] = ["Saturated Geo Pot Vort","K/hPa/s"]
+parm_dict["NBE"] = ["Neg Buoy Energy","J/kg"]
+parm_dict["NST"] = ["Nonsupercell Tornado (&gt;1 NST Threat)"]
+parm_dict["NST1"] = ["Nonsupercell Tornado (&gt;1 NST Threat"]
+parm_dict["NST2"] = ["Nonsupercell Tornado (&gt;1 NST Threat"]
+parm_dict["OGRD"] = ["Current Vectors","m/s"]
+parm_dict["OmDiff"] = ["mb between -15C Omega and MaxOmega","hPa"]
+parm_dict["PAdv"] = ["Pressure Adv","hPa/s"]
+parm_dict["PBE"] = ["Pos Buoy Energy","J/kg"]
+parm_dict["PEC"] = ["Precipitation Potential Placement","in"]
+parm_dict["PFrnt"] = ["2-D Frontogenesis/Mag Fn","K/m/s"]
+parm_dict["PGrd"] = ["Pressure Gradient","hPa/m"]
+parm_dict["PGrd1"] = ["Pressure Gradient","dPa/km"]
+parm_dict["PGrdM"] = ["Pressure Grad Mag","hPa/m"]
+parm_dict["PIVA"] = ["Thermal Wind Vort Adv","/s"]
+parm_dict["PROLGHT2hr"] = ["2hr Lightning probability","%"]
+parm_dict["PTvA"] = ["Pot Vorticity Adv","K/hPa/s*1.0E5"]
+parm_dict["PW2"] = ["Preciptable H2O &gt;1.4 in.","in"]
+parm_dict["PWS34"] = ["Incremental Prob of wind speed &gt;= 34 knots","%"]
+parm_dict["PWS50"] = ["Incremental Prob of wind speed &gt;= 50 knots","%"]
+parm_dict["PWS64"] = ["Incremental Prob of wind speed &gt;= 64 knots","%"]
+parm_dict["PoTA"] = ["Pot Temp Adv","K/s"]
+parm_dict["Prob34"] = ["Prob of Wind Speed &gt; 34 knots","m/s"]
+parm_dict["Prob50"] = ["Prob of Wind Speed &gt; 50 knots","m/s"]
+parm_dict["Prob64"] = ["Prob of Wind Speed &gt; 64 knots","m/s"]
+parm_dict["QPV1"] = ["QVec Conv","K/m^2/s*1.0E-12"]
+parm_dict["QPV2"] = ["Negative EPV*","K/hPa/s"]
+parm_dict["QPV3"] = ["QPV Net"]
+parm_dict["QPV4"] = ["QG-EPV, RH&gt;75%"]
+parm_dict["RH_001_bin"] = ["Binary Prob of RH Grtn 70 percent"]
+parm_dict["RH_002_bin"] = ["Binary Prob of RH Grtn 90 percent"]
+parm_dict["RM5"] = ["Bunkers Right-Moving Supercell","m/s"]
+parm_dict["RM6"] = ["Elevated Right-Moving Supercell","m/s"]
+parm_dict["RMprop"] = ["Right Mover Propagation Vector"]
+parm_dict["RMprop2"] = ["Elevated Right Mover Propagation Vector"]
+parm_dict["RRtype"] = ["Radar w/PType","dBZ"]
+parm_dict["Rain1"] = ["850-1000 ra thk"]
+parm_dict["Rain2"] = ["700-850 ra thk"]
+parm_dict["Ro"] = ["Rossby Number Vag/Vg "]
+parm_dict["SNSQ"] = ["Snow Sql Parameter"]
+parm_dict["SNW"] = ["Sect Norm Wind","m/s"]
+parm_dict["SNWA"] = ["Ageo Sect Norm Wind","kn"]
+parm_dict["SRMl"] = ["Storm Relative Flow Vectors LM","m/s"]
+parm_dict["SRMlM"] = ["Storm Relative Flow Mag LM","m/s"]
+parm_dict["SRMm"] = ["Storm Relative Flow Vecs (Mean Wind)","m/s"]
+parm_dict["SRMmM"] = ["Storm Relative Flow Mag (Mean Wind)","m/s"]
+parm_dict["SRMr"] = ["Storm Relative Flow Vecs (RM)","m/s"]
+parm_dict["SRMrM"] = ["Storm Relative Flow Mag (RM)","m/s"]
+parm_dict["SSP"] = ["Significant Severe Parameter"]
+parm_dict["SSi"] = ["Isentropic Static Stability","hPa/K"]
+parm_dict["STP"] = ["Sig. Tornado Parameter (&gt;1 Sig Tor)"]
+parm_dict["STP1"] = ["Sig. Tornado Parameter (&gt;1 Sig Tor)"]
+parm_dict["SWLEN"] = ["Mean length of swell waves","m"]
+parm_dict["SWSTP"] = ["Steepness of swell waves"]
+parm_dict["SWdir"] = ["Swell Direction"]
+parm_dict["Shear"] = ["Shear (Vector)","/s" ]
+parm_dict["Snow1"] = ["850-1000 sn thk"]
+parm_dict["Snow2"] = ["700-850 sn thk"]
+parm_dict["SnowT"] = ["Preferred Ice Growth","K"]
+parm_dict["St-Pr"] = ["Stable Precipitation","mm"]
+parm_dict["St-Pr1hr"] = ["1 hr Stable Precipitation","mm"]
+parm_dict["St-Pr2hr"] = ["2 hr Stable Precipitation","mm"]
+parm_dict["St-Pr3hr"] = ["3 hr Stable Precipitation","mm"]
+parm_dict["StrTP"] = ["Strong Tornado Parameter","m/s^2"]
+parm_dict["StrmMot"] = ["Storm Motion","kn"]
+parm_dict["SuCP"] = ["Supercell Composite Parameter"]
+parm_dict["TAdv"] = ["Temperature Adv","K/s"]
+parm_dict["TGrd"] = ["Temperature Gradient","K/m"]
+parm_dict["TGrdM"] = ["Temperature Grad Mag","K/m"]
+parm_dict["TORi"] = ["BRNSHR,EHI,LRate&gt;3C/km,CIN &lt; 150"]
+parm_dict["TORi2"] = ["BRNSHR,EHI,0-2km LRate &gt; 3C/km"]
+parm_dict["TP120hr"] = ["5 Day Total Gridded Precip","in"]
+parm_dict["TP168hr"] = ["7 Day Total Gridded Precip","mm"]
+parm_dict["TPx3"] = ["3 Hr Accum Precip","mm"]
+parm_dict["TQIND"] = ["TQ Index 12=Cold Pool 17=Embedded Convection","C"]
+parm_dict["TShrMi"] = ["S=0-6km Shear Supports Scells"]
+parm_dict["TV"] = ["Virtual Temperature","K"]
+parm_dict["TW"] = ["Wet Bulb Temp","K"]
+parm_dict["T_001_bin"] = ["Binary Prob of Temp Lstn 0C"]
+parm_dict["Tdef"] = ["Total Deformation","/s*100000.0"]
+parm_dict["Tdend"] = ["Dendritic Growth Temperatures","K"]
+parm_dict["ThGrd"] = ["Temperature Gradient","C/m"]
+parm_dict["Thom5"] = ["S-R Flow"]
+parm_dict["Thom5a"] = ["S-R Flow"]
+parm_dict["Thom6"] = ["S-R Flow Suggests Tor Supercells"]
+parm_dict["TmDpD"] = ["Temp minus Dewp Dep"]
+parm_dict["Tmax"] = ["Layer Max Temperature","K"]
+parm_dict["Tmin"] = ["Layer Min Temperature","K"]
+parm_dict["TotQi"] = ["Isentropic Total Moisture","g*hPa/(kg*K)"]
+parm_dict["Tstk"] = ["Temp Stack","K"]
+parm_dict["TwMax"] = ["Layer Max Wet-bulb Temperature","K"]
+parm_dict["TwMin"] = ["Layer Min Wet-bulb Temperature","K"]
+parm_dict["Twstk"] = ["Wet-bulb Temp Stack","K"]
+parm_dict["TxSM"] = ["Filtered-500km Temp","C"]
+parm_dict["VAdv"] = ["Vorticity Adv","/s*1.0E9"]
+parm_dict["VAdvAdvection"] = ["Vorticity Adv","/s"]
+parm_dict["VGP"] = ["Vort Gen Param"]
+parm_dict["WCD"] = ["Warm Cloud Depth Approx.    ","m"]
+parm_dict["WDea"] = ["Wind Direction Analysis Uncertainity","deg"]
+parm_dict["WGSMX1hr"] = ["Max Hourly Wind Gust","m/s"]
+parm_dict["WGSea"] = ["Wind Gust Speed Analysis Uncertainty","m/s"]
+parm_dict["WVLEN"] = ["Mean length of wind waves","m"]
+parm_dict["WVSTP"] = ["Steepness of wind waves"]
+parm_dict["WVdir"] = ["Wind Wave Direction"]
+parm_dict["WndChl"] = ["Wind Chill","K"]
+parm_dict["ageoVC"] = ["Ageo Vert Circ"]
+parm_dict["ageoW"] = ["Ageo Wind","m/s"]
+parm_dict["ageoWM"] = ["Magnitude Ageo Wind","m/s"]
+parm_dict["cCape"] = ["Computed CAPE","J/kg"]
+parm_dict["cCin"] = ["Computed CIN","J/kg"]
+parm_dict["cTOT"] = ["Cross Totals","C"]
+parm_dict["capeToLvl"] = ["cape up to level"]
+parm_dict["dCape"] = ["Downdraft CAPE","J/kg"]
+parm_dict["dP"] = ["Pressure Thickness","mb"]
+parm_dict["dT"] = ["Vrt Temp Chg","C"]
+parm_dict["dVAdv"] = ["Diff vort Adv","/s*1.0E9"]
+parm_dict["dZ"] = ["Thickness","m"]
+parm_dict["defV"] = ["Deformation","sec^-1"]
+parm_dict["df"] = ["Duct Function"]
+parm_dict["dirPW"] = ["Primary Wave Direction"]
+parm_dict["dirSW"] = ["Secondary Wave Direction"]
+parm_dict["fGen"] = ["QG Frontogenesis","K^2/m^2/s"]
+parm_dict["fnD"] = ["Qn Div","K/m^2/s"]
+parm_dict["fsD"] = ["Qs Div","K/m^2/s"]
+parm_dict["gamma"] = ["Lapse Rate","K/m"]
+parm_dict["gammaE"] = ["ThetaE Lapse Rate","K/m"]
+parm_dict["geoVort"] = ["Geo Vorticity","/s"]
+parm_dict["geoW"] = ["Geostrophic Wind","m/s"]
+parm_dict["geoWM"] = ["Magnitude Geo Wind","m/s"]
+parm_dict["loCape"] = ["CAPE to 3kmAGL (Tv)","J/kg"]
+parm_dict["maxEPT"] = ["Max ThetaE (0-3kmAgl)","K"]
+parm_dict["minEPT"] = ["Min ThetaE (3-6kmAgl)","K"]
+parm_dict["msl-P2"] = ["MSL Pressure (2)","hPa"]
+parm_dict["muCape"] = ["Most Unstable CAPE ","J/kg"]
+parm_dict["pV"] = ["Potential Vorticity","K/hPa/s"]
+parm_dict["pVeq"] = ["Equiv Pot Vort","K/hPa/s"]
+parm_dict["qDiv"] = ["Div Q","K/m^2/s*1.0E-12"]
+parm_dict["qVec"] = ["Q Vectors","K/m^2/s"]
+parm_dict["qnVec"] = ["Qn Vectors","K/m^2/s"]
+parm_dict["qsVec"] = ["Qs Vectors","K/m^2/s"]
+parm_dict["sce"] = ["NOHRSC Snow Coverage Elevation","kft"]
+parm_dict["shWlt"] = ["Showalter Index","C"]
+parm_dict["snoRatCrocus"] = ["Snow Ratio - Crocus/ECMWF"]
+parm_dict["snoRatSPC"] = ["Snow Ratio - SPC"]
+parm_dict["snoRatSPCdeep"] = ["Snow Ratio - SPC 0-3km MaxT"]
+parm_dict["snoRatSPCsurface"] = ["Snow Ratio - SPCsurface"]
+parm_dict["swe"] = ["NOHRSC Snow Water Equivalent","in"]
+parm_dict["swtIdx"] = ["Sweat Index"]
+parm_dict["tTOT"] = ["Total Totals","C"]
+parm_dict["tWind"] = ["Thermal Wind","kn"]
+parm_dict["tWindU"] = ["U Component of Thermal Wind","kn"]
+parm_dict["tWindV"] = ["V Component of Thermal Wind","kn"]
+parm_dict["tpHPC"] = ["HPC Precip","in"]
+parm_dict["tpHPCndfd"] = ["Precipitation","mm"]
+parm_dict["uFX"] = ["Geo Momentum","m/s"]
+parm_dict["uWStk"] = ["U Stack","m/s"]
+parm_dict["vSmthW"] = ["Vertical Smoothed Wind ","m/s"]
+parm_dict["vTOT"] = ["Vertical Totals"]
+parm_dict["vWStk"] = ["V Stack","m/s"]
+parm_dict["vertCirc"] = ["Vertical Circulation"]
+parm_dict["wDiv"] = ["Wind Divergence","/s"]
+parm_dict["wSp_001_bin"] = ["Binary Prob of Wind Grtn 40kts"]
+parm_dict["wSp_002_bin"] = ["Binary Prob of Wind Grtn 50kts"]
+parm_dict["wSp_003_bin"] = ["Binary Prob of Wind Grtn 60kts"]
+parm_dict["wSp_004_bin"] = ["Binary Prob of Wind Grtn 30kts"]
+parm_dict["wSpea"] = ["Wind Speed Analysis Uncertainty","kn"]
+parm_dict["zAGL"] = ["Height AGL","m"]
+
+
+
+
+
+
+
+
+
+
+
 
 wmo_centers = {}
 wmo_centers['1'] = ['ABOM','ABOM ACCESS']
@@ -1372,49 +1630,11 @@ ncep_subcenters['14'] = ['MDL','NWS Meteorological Development Laboratory']
 nws_subcenters = {'24': 'KILN', '25': 'KCLE', '26': 'KCAE', '27': 'KCRP', '20': 'KCHS', '21': 'KRLX', '22': 'KCYS', '23': 'KLOT', '160': 'KTIR', '28': 'KFWD', '29': 'KBOU', '161': 'KALR', '4': 'KAMA', '8': 'KLWX', '163': 'NOHRSC', '119': 'KILM', '120': 'KCAR', '121': 'KEYW', '118': 'KICT', '59': 'KLCH', '58': 'KARX', '55': 'PAJK', '54': 'KJAX', '57': 'KMRX', '56': 'KEAX', '51': 'KIND', '50': 'KHGX', '53': 'KJAN', '52': 'KJKL', '115': 'KTWC', '114': 'KTOP', '88': 'KPBZ', '89': 'KPIH', '111': 'KLSX', '110': 'KSGF', '113': 'KTBW', '112': 'KTAE', '82': 'KOUN', '83': 'KOAX', '80': 'KIWX', '81': 'KLBF', '86': 'KPHI', '87': 'KPSR', '84': 'KPAH', '85': 'KPDT', '3': 'KABQ', '7': 'KEWX', '108': 'KFSD', '109': 'KOTX', '102': 'KSGX', '103': 'KMTR', '100': 'KSLC', '101': 'KSJT', '106': 'KSEW', '107': 'KSHV', '104': 'KHNX', '105': 'TSJU', '39': 'KFGZ', '38': 'PAFG', '33': 'KDLH', '32': 'KDDC', '31': 'KDTX', '30': 'KDMX', '37': 'KEKA', '36': 'KLKN', '35': 'KEPZ', '34': 'KFGF', '60': 'KVEF', '61': 'KLZK', '62': 'KLOX', '63': 'KLMK', '64': 'KLUB', '65': 'KMQT', '66': 'KMFR', '67': 'KMLB', '68': 'KMEG', '69': 'KMFL', '170': 'KNES', '2': 'KALY', '162': 'KFWR', '6': 'KFFC', '99': 'KSTO', '98': 'KRNK', '91': 'KPQR', '90': 'KGYX', '93': 'KDVN', '92': 'KPUB', '95': 'KUNR', '94': 'KRAH', '97': 'KRIW', '96': 'KREV', '11': 'KBMX', '10': 'KBGM', '13': 'KBOI', '12': 'KBIS', '15': 'KBRO', '14': 'KBOX', '17': 'KBTV', '16': 'KBUF', '19': 'KCTP', '18': 'KILX', '117': 'KAKQ', '116': 'KTSA', '151': 'PACR', '150': 'KTUA', '153': 'KRSA', '152': 'KSTR', '155': 'KRHA', '154': 'KORN', '157': 'KMSR', '156': 'KKRF', '159': 'KPTR', '158': 'KTAR', '48': 'KGID', '49': 'PHFO', '46': 'KGSP', '47': 'PGUA', '44': 'KTFX', '45': 'KGRB', '42': 'KGJT', '43': 'KGRR', '40': 'KGGW', '41': 'KGLD', '1': 'KABR', '5': 'PAFC', '9': 'KBYZ', '77': 'KAPX', '76': 'KOHX', '75': 'KMHX', '74': 'KMOB', '73': 'KMSO', '72': 'KMPX', '71': 'KMKX', '70': 'KMAF', '79': 'KOKX', '78': 'KLIX'}
 
 grid_dictionary = {
-'AK-DGEX': ['7', '0', '186'],
-'AK-GFS22': ['7', '0', '217'],
-'AK-GFS': ['7', '0', '160'],
-'AK-NAM11': ['7', '0', '242'],
-'AK-NAM22': ['7', '0', '217'],
-'AK-NAM45': ['7', '0', '216'],
-'AK-NAM95': ['7', '0', '207'],
-'AK-NamDNG5': ['7', '0', '198'],
-'AK-NICICE': ['7', '0', '242'],
-'AK-RTMA': ['7', '4', '198'],
-'AK-RTMA-HiRes': ['7', '4', '1023'],
-'AK-SREF45': ['7', '2', '216'],
-'AKwave10-2': ['7', '0', '15'],
-'AKwave4-2': ['7', '0', '16'],
-'AQM196': ['7', '0', '196'],
-'AQM227': ['7', '0', '227'],
 'AUTOSPE': ['9', '170', '240'],
-'AVIATION': ['7', '8', '255203'],
-'Aviation-8-130': ['7', '8', '130'],
-'Aviation-8-252': ['7', '8', '252'],
-'AVN203': ['7', '0', '203'],
-'AVN37': ['7', '0', '37'],
-'AVN38': ['7', '0', '38'],
-'AVN39': ['7', '0', '39'],
-'AVN40': ['7', '0', '40'],
-'AVN41': ['7', '0', '41'],
-'AVN42': ['7', '0', '42'],
-'AVN43': ['7', '0', '43'],
-'AVN44': ['7', '0', '44'],
-'AVN': ['7', '0', '202'],
-'AVN-NorthernHemisphere': ['7', '0', '371'],
 'AWCICING': ['7', '8', '255202'],
 'AWCTURB': ['7', '8', '255202'],
 'BHPE': ['9', '0', '304'],
-'CanadianModel': ['54', '0', '21'],
-'ccpa2': ['7', '4', '375'],
-'ccpa2P5': ['7', '4', '110'],
-'ccpa5K': ['7', '4', '197'],
-'ccpa': ['7', '4', '361181001'],
-'ccpaP5': ['7', '4', '722361001'],
-'ccpaUS': ['7', '4', '240'],
 'CMC': ['54', '0', '245190', 'Regional Canadian Model'],
-'cmc': ['54', '0', '362181002'],
 'COAMPS-CentralAmerica': ['58', '0', '461298'],
 'COAMPS-Europe': ['58', '0', '301188'],
 'COAMPS-NortheastPacific': ['58', '0', '271151'],
@@ -1426,25 +1646,8 @@ grid_dictionary = {
 'CPCoutlook-Medium-AK': ['7', '7', '198'],
 'CPCoutlook-Short': ['7', '7', '197'],
 'CPCoutlook-Short-AK': ['7', '7', '198'],
-'DGEX': ['7', '0', '185'],
-'DMD': ['7', '0', '888'],
-'DRAP20': ['7', '16', '9090001'],
-'ECMF10': ['98', '0', '255110'],
-'ECMF11': ['98', '0', '255111'],
-'ECMF12': ['98', '0', '255112'],
-'ECMF1': ['98', '0', '255101'],
-'ECMF2': ['98', '0', '255102'],
-'ECMF3': ['98', '0', '255103'],
-'ECMF4': ['98', '0', '255104'],
-'ECMF5': ['98', '0', '255105'],
-'ECMF6': ['98', '0', '255106'],
-'ECMF7': ['98', '0', '255107'],
-'ECMF8': ['98', '0', '255108'],
-'ECMF9': ['98', '0', '255109'],
 'ECMF-Global': ['98', '0', '14573'],
 'ECMF-MODEL0': ['98', '0', '255113'],
-'ecmwf': ['98', '0', '229'],
-'ecmwfg': ['98', '0', '2'],
 'ECMWF-HiRes': ['98', '0', '232'],
 'ECMWFHiRes': ['98', '0', '361091001'],
 'ecmwfP25': ['98', '0', '144072101'],
@@ -1454,26 +1657,15 @@ grid_dictionary = {
 'ECMWF-wave-guidance': ['98', '0', 'ECMWF-wave-0p25deg'],
 'EKDMOS': ['7', '14', '184'],
 'EKDMOS-AK': ['7', '14', '1023'],
-'ENLIL': ['7', '16', '18060001'],
-'ENSEMBLE37': ['7', '2', '37'],
-'ENSEMBLE38': ['7', '2', '38'],
-'ENSEMBLE39': ['7', '2', '39'],
-'ENSEMBLE40': ['7', '2', '40'],
-'ENSEMBLE41': ['7', '2', '41'],
-'ENSEMBLE42': ['7', '2', '42'],
-'ENSEMBLE43': ['7', '2', '43'],
-'ENSEMBLE44': ['7', '2', '44'],
 'ENSEMBLE': ['7', '2', '371'],
 'EPFlux': ['7', '16', '3636001'],
 'EPwave10-2': ['7', '0', '14'],
-'ESTOFS': ['7', '4', '184'],
-'ESTOFS-AK': ['7', '4', '825553001'],
-'ESTOFS-Hawaii': ['7', '4', '321225001'],
-'ESTOFS-PR': ['7', '4', '339227-95'],
-'EtaBufr': ['7', '0', '888'],
-'ETSS': ['7', '14', '184'],
-'ETSS-AK': ['7', '14', '1023'],
-'fens': ['58', '0', '361181002'],
+'ESTOFS': ['7', '4', '184', 'Extratropical Surge and Tide Operational Forecast System'],
+'ESTOFS-AK': ['7', '4', '825553001', 'Extratropical Surge and Tide Operational Forecast System'],
+'ESTOFS-Hawaii': ['7', '4', '321225001', 'Extratropical Surge and Tide Operational Forecast System'],
+'ESTOFS-PR': ['7', '4', '339227-95', 'Extratropical Surge and Tide Operational Forecast System'],
+'ETSS': ['7', '14', '184', 'Extra-Tropical Storm Surge'],
+'ETSS-AK': ['7', '14', '1023', 'Extra-Tropical Storm Surge'],
 'FFG-ACR': ['9', '151', '240151'],
 'FFG-ALR': ['9', '161', '240161'],
 'FFG-FWR': ['9', '162', '240162'],
@@ -1487,35 +1679,31 @@ grid_dictionary = {
 'FFG-TAR': ['9', '158', '240158'],
 'FFG-TIR': ['9', '160', '250160'],
 'FFG-TUA': ['9', '150', '240150'],
-'FNMOC-FAROP': ['58', '0', '360181001'],
-'FNMOC-NCODA': ['58', '0', '1440721'],
-'fnmocWave': ['58', '0', '361181002'],
-'FNMOC-WW3': ['58', '0', '2291'],
-'FNMOC-WW3-Europe': ['58', '0', '301188'],
+'FNMOC-FAROP': ['58', '0', '360181001', 'Forecast of Aerosol Radiative Optical Properties'],
+'FNMOC-NCODA': ['58', '0', '1440721', 'Sea Surface Temperature and Sea Surface Anomaly'],
+'FNMOC-WW3': ['58', '0', '2291', 'Global Wave Watch'],
+'FNMOC-WW3-Europe': ['58', '0', '301188', 'European Wave Watch'],
 'gdas': ['7', '0', '372'],
-'GEFS': ['7', '2', '375'],
-'gefsNdgd': ['7', '0', '197'],
-'GFS1p0': ['7', '0', '375'],
-'GFS20': ['7', '0', '215'],
-'gfs32': ['7', '0', '221'],
-'GFS40': ['7', '0', '212'],
-'GFS': ['7', '0', '193'],
-'GFS80': ['7', '0', '211'],
-'GFS95': ['7', '0', '213'],
-'GfsBufr': ['7', '0', '888'],
-'GFS-EPAC20': ['7', '0', 'GFS-PAC-20KM'],
-'GFS-EPAC40': ['7', '0', '254'],
+'GEFS': ['7', '2', '375', 'Global Ensemble Forecast System'],
+'GFS1p0': ['7', '0', '375', 'Global Forecast System'],
+'GFS20': ['7', '0', '215', 'Global Forecast System 20km'],
+'gfs32': ['7', '0', '221', 'Global Forecast System'],
+'GFS40': ['7', '0', '212', 'Global Forecast System 40km'],
+'GFS': ['7', '0', '193', 'Global Forecast System'],
+'GFS80': ['7', '0', '211', 'Global Forecast System 80km'],
+'GFS95': ['7', '0', '213', 'Global Forecast System 95km'],
+'GfsBufr': ['7', '0', '888', 'Global Forecast System'],
+'GFS-EPAC20': ['7', '0', 'GFS-PAC-20KM', 'Global Forecast System East Pacific 20km'],
+'GFS-EPAC40': ['7', '0', '254', 'Global Forecast System East Pacific 40km'],
 'GFSGuide': ['7', '4', '232'],
 'GFSLAMP5': ['7', '14', '197'],
 'GFSLAMP': ['7', '0', '888'],
 'GFS-NH': ['7', '0', '201'],
-'GFSSouthernHemisphere': ['7', '0', '28'],
 'GLERL': ['161', '1', '176'],
 'GlobalWave': ['7', '0', '11'],
 'GoesBufr': ['7', '0', '888'],
 'GRLKwave': ['7', '0', '176'],
 'Guam-RTMA': ['7', '4', '199'],
-'gww': ['7', '0', '361181001'],
 'Hawaii-GFS80': ['7', '0', '225'],
 'Hawaii-HiResW-ARW': ['7', '0', '255005'],
 'Hawaii-HiResW-NMM': ['7', '0', '255005'],
@@ -1560,8 +1748,8 @@ grid_dictionary = {
 'HPCqpf': ['7', '5', '226'],
 'HPCqpfNDFD': ['7', '5', '197'],
 'HPE': ['9', '0', '304'],
-'HRRR': ['7', '0', '184'],
-'HRRRX': ['59', '0', '17991059001'],
+'HRRR': ['7', '0', '184', 'High Resolution Rapid Refresh'],
+'HRRRX': ['59', '0', '17991059001', 'High Resolution Rapid Refresh'],
 'HurWind175': ['7', '0', '175'],
 'HurWind226': ['7', '0', '226'],
 'HurWind250': ['7', '0', '250'],
@@ -1573,13 +1761,9 @@ grid_dictionary = {
 'iceSHP5': ['7', '0', '405'],
 'iceSouth': ['7', '0', '400'],
 'IonTemperature': ['7', '16', '2091001'],
-'IRGF': ['7', '16', '115001'],
 'LAMP2p5': ['7', '14', '184'],
-'lfm': ['7', '0', '6'],
 'MANSPE': ['9', '170', '240'],
 'MDCRS': ['7', '0', '888'],
-'Metar': ['7', '0', '120'],
-'MetarOA': ['7', '0', '230'],
 'MOSGuide': ['7', '14', '184'],
 'MOSGuide-AK': ['7', '14', '1023'],
 'MOSGuideExtended': ['7', '14', '187'],
@@ -1635,16 +1819,9 @@ grid_dictionary = {
 'NAVGEM': ['58', '0', '720361001'],
 'NCWF': ['7', '8', '302', 'National Convective Weather Forecast'],
 'NDFD5': ['8', '65535', '197'],
-'NDFD': ['8', '65535', '184'],
+'NDFD': ['8', '65535', '184', 'National Digital Forecast Database'],
 'NICICE': ['7', '0', '218'],
 'NOHRSC-SNOW': ['9', '163', '255'],
-'nww3': ['7', '0', '289157001'],
-'ofsGmex': ['7', '0', '500500001'],
-'ofsWatl': ['7', '0', '500400001'],
-'OPCWave180': ['7', '6', '180'],
-'OPCWave181': ['7', '6', '181'],
-'OPCWave182': ['7', '10', '182'],
-'Ovation': ['7', '16', '9050001'],
 'PoesBufr': ['7', '0', '888'],
 'PR-GFS20': ['7', '0', 'GFS-PRICO-20KM'],
 'PR-GFS': ['7', '0', '161'],
@@ -1653,7 +1830,6 @@ grid_dictionary = {
 'PROB3HR': ['7', '14', '236'],
 'Profiler': ['7', '0', '888'],
 'PR-RTMA': ['7', '4', '195'],
-
 'QPE-MSR': ['9', '157', '250157'],
 'QPE-ORN': ['9', '154', '240154'],
 'QPE-PTR': ['9', '159', '240159'],
@@ -1694,22 +1870,18 @@ grid_dictionary = {
 'QPE-XNAV-TUA': ['9', '150', '240150'],
 'Raob': ['7', '0', '888'],
 'RaobOA': ['7', '0', '888'],
-'RAP13': ['7', '0', '130'],
-'RAP15': ['7', '0', '88'],
-'RAP20': ['7', '0', '252'],
-'RAP32': ['7', '0', '221'],
-'RAP40': ['7', '0', '212',''],
-'RAP': ['7', '0', '888'],
-'RAP80': ['7', '0', '211'],
-'RAPIcing': ['7', '0', '236'],
+'RAP13': ['7', '0', '130', 'Rapid Refresh'],
+'RAP15': ['7', '0', '88', 'Rapid Refresh'],
+'RAP20': ['7', '0', '252', 'Rapid Refresh'],
+'RAP32': ['7', '0', '221', 'Rapid Refresh'],
+'RAP40': ['7', '0', '212', 'Rapid Refresh'],
+'RAPIcing': ['7', '0', '236', 'Rapid Refresh'],
 'RCM': ['8', '0', '301'],
 'RFCqpf': ['9', '162', '226'],
 'RTGSST': ['7', '4', '235'],
 'RTGSSTHR': ['7', '4', '173'],
-'RTMA5': ['7', '4', '197'],
-'RTMA': ['7', '4', '184'],
-'rtmaDV': ['7', '2', '198'],
-'RTMA-NWRFC': ['7', '4', '118'],
+'RTMA5': ['7', '4', '197', 'Real-Time Mesoscale Analysis'],
+'RTMA': ['7', '4', '184', 'Real-Time Mesoscale Analysis'],
 'RTOFS-Alaska': ['7', '0', '1023'],
 'RTOFS-Arctic': ['7', '0', '1023'],
 'RTOFS-Atlantic': ['7', '0', 'RTOFS-Atlantic'],
@@ -1746,22 +1918,6 @@ grid_dictionary = {
 'SeaIce220': ['7', '0', '220'],
 'SeaIce235': ['7', '0', '235'],
 'SeaIce': ['7', '0', '219'],
-'SeaSfcAnalysis21': ['7', '4', '21'],
-'SeaSfcAnalysis22': ['7', '4', '22'],
-'SeaSfcAnalysis23': ['7', '4', '23'],
-'SeaSfcAnalysis24': ['7', '4', '24'],
-'SeaSfcAnalysis37': ['7', '4', '37'],
-'SeaSfcAnalysis38': ['7', '4', '38'],
-'SeaSfcAnalysis39': ['7', '4', '39'],
-'SeaSfcAnalysis40': ['7', '4', '40'],
-'SeaSfcAnalysis41': ['7', '4', '41'],
-'SeaSfcAnalysis42': ['7', '4', '42'],
-'SeaSfcAnalysis43': ['7', '4', '43'],
-'SeaSfcAnalysis44': ['7', '4', '44'],
-'SeaSfcAnalysis61': ['7', '4', '61'],
-'SeaSfcAnalysis62': ['7', '4', '62'],
-'SeaSfcAnalysis63': ['7', '4', '63'],
-'SeaSfcAnalysis64': ['7', '4', '64'],
 'SolarFlux': ['7', '16', '18090001'],
 'SPCGuide': ['7', '9', '197'],
 'SREF132': ['7', '2', '132'],
@@ -1777,24 +1933,8 @@ grid_dictionary = {
 'TPCWindProb-721181001': ['7', '10', '721181001'],
 'ukmet228': ['74', '0', '145073001'],
 'ukmet2': ['74', '0', '289145001'],
-'UKMET37': ['74', '0', '37'],
-'UKMET38': ['74', '0', '38'],
-'UKMET39': ['74', '0', '39'],
-'UKMET40': ['74', '0', '40'],
-'UKMET41': ['74', '0', '41'],
-'UKMET42': ['74', '0', '42'],
-'UKMET43': ['74', '0', '43'],
-'UKMET44': ['74', '0', '44'],
 'ukmet': ['74', '0', '45'],
 'UKMET-Global': ['74', '0', '289145'],
-'UkmetHR-1': ['74', '0', '108162001'],
-'UkmetHR-2': ['74', '0', '108162002'],
-'UkmetHR-3': ['74', '0', '108162003'],
-'UkmetHR-4': ['74', '0', '108162004'],
-'UkmetHR-5': ['74', '0', '108162005'],
-'UkmetHR-6': ['74', '0', '108162006'],
-'UkmetHR-7': ['74', '0', '108162007'],
-'UkmetHR-8': ['74', '0', '108162008'],
 'UKMET-MODEL1': ['74', '0', '999002'],
 'UKMET-NorthernHemisphere': ['74', '0', '371'],
 'URMA25': ['7', '4', '184'],
@@ -1819,7 +1959,6 @@ grid_dictionary = {
 'WW3-EasternPacific': ['7', '0', '14'],
 'WW3-US-East': ['7', '0', '12'],
 'WW3-US-West': ['7', '0', '13']
-
 }
 
 
@@ -1832,9 +1971,9 @@ navigation = {'216': ['grid over Alaska (polar stereographic)', '139', '107', '4
 '210': ['Regional - Puerto Rico (Mercator)', '25', '25', '80.0', '80.0', 'km'],
 '211': ['Regional - CONUS (Lambert Conformal)', '93', '65', '81.2705', '81.2705', 'km'],
 '255110': ['ECMWF - Southern Hemisphere Lat Lon 180W-90W', '37', '37', '2.5', '2.5', 'degree'],
-'197-RTMA': [' Grid over the contiguous United States - 16X Resolution (5 km) for RTMA', '1073', '689', '5.079', '5.079', 'km'],
-'218': ['Grid over the Contiguous United States (used by the 12-km NAM Model) (Lambert Conformal)', '614', '428', '12.191', '12.191', 'km'],
-'219': [' grid over the Northern Hemisphere to depict SSMI-derived ice concentrations (polar stereographic)', '385', '465', '25.4', '25.4', 'km'],
+'197-RTMA': ['Grid over the contiguous United States - 16X Resolution (5 km) for RTMA', '1073', '689', '5.079', '5.079', 'km'],
+'218': ['Grid over the Contiguous United States (Lambert Conformal)', '614', '428', '12.191', '12.191', 'km'],
+'219': ['Grid over theNorthern Hemisphere to depict SSMI-derived ice concentrations (polar stereographic)', '385', '465', '25.4', '25.4', 'km'],
 '132': ['Regional - NOAMHI - High Resolution over Eastern US (Lambert Conformal for 8 km NMM)', '697', '553', '16.232', '16.232', 'km'],
 '14573': ['World wide ECMWF Composite Grid', '145', '73', '2.5', '2.5', 'degree'],
 '255112': ['ECMWF - Southern Hemisphere Lat Lon 90W-0', '37', '37', '2.5', '2.5', 'degree'],
@@ -1842,8 +1981,8 @@ navigation = {'216': ['grid over Alaska (polar stereographic)', '139', '107', '4
 '722361001': ['260642-point (722x361) global Lon/Lat grid', '722', '361', '0.5', '0.5', 'degree'],
 '15': ['0.25 x 0.167 degree Latitude/Longitude grid for Alaska ', '401', '187', '0.250000', '0.166667', 'degree'],
 '138': ['Air-Quality Forecasting CONUS', '468', '288', '12.0', '12.0', 'km'],
-'145029001': [' World wide ECMWF 2.5 degree WAVE ', '145', '29', '2.5', '2.5', 'degree'],
-'145029002': [' World wide ECMWF 2.5 degree WAVE -Add one column', '146', '29', '2.5', '2.5', 'degree'],
+'145029001': ['World wide ECMWF 2.5 degree WAVE ', '145', '29', '2.5', '2.5', 'degree'],
+'145029002': ['World wide ECMWF 2.5 degree WAVE -Add one column', '146', '29', '2.5', '2.5', 'degree'],
 '173': ['Global 1/12 degree Lat/Lon grid', '4320', '2160', '0.083333', '0.083333', 'degree'],
 '24': ['International Exchange and FOS grid 24', '38', '36', '5.0', '2.5', 'degree'],
 '301254': ['(301x254) COAMPS Western Atlantic Equidistant Cylindrical', '301', '254', '0.150000', '0.150000', 'degree'],
@@ -1892,11 +2031,11 @@ navigation = {'216': ['grid over Alaska (polar stereographic)', '139', '107', '4
 '130': ['Regional (CONUS) Lambert Conformal grid', '451', '337', '13.545', '13.545', 'km'],
 'ECMWF-wave-0p25deg': ['Global Latitude/Longitude 0.25 deg Resolution', '1441', '685', '0.25', '0.25', 'degree'],
 '769384001': ['Global Gaussian Lon/Lat T254 Resolution - Add one column', '769', '384', '0.469', '0', 'degree'],
-'115001': [' SWPC IRGF C ', '11', '5', '1', '1', 'degree'],
-'371': [' World wide ensemble grid ', '288', '73', '1.25', '1.25', 'degree'],
+'115001': ['SWPC IRGF C ', '11', '5', '1', '1', 'degree'],
+'371': ['World wide ensemble grid ', '288', '73', '1.25', '1.25', 'degree'],
 '145': ['Air-Quality Forecasting Northeast Intermediate Domain', '169', '145', '12.0', '12.0', 'km'],
-'373': [' World wide ECMWF Composite Tropical Belt Grid ', '145', '29', '2.5', '2.5', 'degree'],
-'372': [' World wide ECMWF Composite Northern Hemisphere Grid ', '145', '37', '2.5', '2.5', 'degree'],
+'373': ['World wide ECMWF Composite Tropical Belt Grid ', '145', '29', '2.5', '2.5', 'degree'],
+'372': ['World wide ECMWF Composite Northern Hemisphere Grid ', '145', '37', '2.5', '2.5', 'degree'],
 '245': ['Regional - NOAMHI - High Resolution over Eastern US (Lambert Conformal for 8 km NMM)', '336', '372', '8.0', '8.0', 'km'],
 '374': ['Grid used for TPCSurge data', '8577', '5505', '0.634926', '0.634926', 'km'],
 '255003': ['HIRES - 5 km Alaska', '825', '603', '5.0', '5.0', 'km'],
@@ -1904,7 +2043,7 @@ navigation = {'216': ['grid over Alaska (polar stereographic)', '139', '107', '4
 '199': ['Grid over - Guam (Mercator)', '193', '193', '2.5', '2.5', 'km'],
 '198': ['Grid over Alaska (Polar Stereographic)', '825', '553', '5.953', '5.953', 'km'],
 '195': ['Grid over - Puerto Rico (Mercator)', '177', '129', '2.5', '2.5', 'km'],
-'197': [' Grid over the contiguous United States - 16X Resolution (5 km) ', '1073', '689', '5.079', '5.079', 'km'],
+'197': ['Grid over the contiguous United States - 16X Resolution (5 km) ', '1073', '689', '5.079', '5.079', 'km'],
 '196': ['Grid over - Hawaii (Mercator)', '321', '225', '2.5', '2.5', 'km'],
 '240158': ['HRAP Grid for TAR (Northeast RFC Taunton, Massachusetts)', '180', '235', '4.7625', '4.7625', 'km'],
 '193': ['Global Latitude/Longitude 0.25 deg Resolution', '1440', '721', '.25', '.25', 'degree'],
@@ -1919,7 +2058,7 @@ navigation = {'216': ['grid over Alaska (polar stereographic)', '139', '107', '4
 '825553001': ['ESTOFS HIRES - 6 km Alaska', '825', '553', '5.953125', '5.953125', 'km'],
 '251': ['Coastal Ocean Forecast System Grid - North Atlantic Region (longitude/latitude grid)', '332', '210', '0.1', '0.1', 'degree'],
 '207': ['Regional - Alaska (polar stereographic)', '49', '35', '95.25', '95.25', 'km'],
-'2091001': [' SWPC Ion Temperature C ', '20', '91', '18', '2', 'degree'],
+'2091001': ['SWPC Ion Temperature C ', '20', '91', '18', '2', 'degree'],
 '108162008': ['UKMet HiRes tile - Southern Hemisphere Longitude range 251.25E - 340.416E ', '108', '162', '0.833', '0.556', 'degree'],
 '385190001': ['Global Gaussian Lon/Lat T126 Resolution - Add one column', '385', '190', '0.9375', '0', 'degree'],
 '108162006': ['UKMet HiRes tile - Southern Hemisphere Longitude range 71.25E - 160.416E ', '108', '162', '0.833', '0.556', 'degree'],
@@ -1942,7 +2081,7 @@ navigation = {'216': ['grid over Alaska (polar stereographic)', '139', '107', '4
 '304': ['MPE produced grid', '81', '91', '4.762', '4.762', 'km'],
 '305': ['Regional - CONUS (Lambert Conformal)', '151', '113', '40.63525', '40.63525', 'km'],
 '306': ['Great Lakes Lamber conformal', '289', '186', '5.079', '5.079', 'km'],
-'215': ['grid over the contiguous United States - Quadruple Resolution (used by the 29-km NAM model)(Lambert Conformal)', '369', '257', '20.317625', '20.317625', 'km'],
+'215': ['Grid over the contiguous United States - Quadruple Resolution (Lambert Conformal)', '369', '257', '20.317625', '20.317625', 'km'],
 '244': ['North Atlantic Hurricane (longitude/latitude grid)', '275', '203', '0.4', '0.4', 'degree'],
 '461298': ['(461x298) COAMPS Equitorial America Equidistant Cylindrical', '461', '298', '0.150000', '0.150000', 'degree'],
 '246': ['Regional - NOAMHI - High Resolution over Western US (Lambert Conformal for 8 km NMM)', '332', '371', '8.0', '8.0', 'km'],
@@ -1994,7 +2133,7 @@ navigation = {'216': ['grid over Alaska (polar stereographic)', '139', '107', '4
 '255': ['NOHRSC-SNOW', '867', '419', '0.0670000016689301', '0.0670000016689301', 'degree'],
 'gridHFR-US_EAST_NORTH_2KM': ['High Frequency Radar (US_EAST_NORTH_2KM) total vector velocity (TVV) Lon/Lat Resolution ', '2103', '222', '0.019356', '0.017979', 'degree'],
 'GFS-PRICO-20KM': ['Latitude/Longitude Equidistant_Cylindrical (LO: 0.0, CM: -54.0)', '275', '205', '0.25', '0.25', 'degree'],
-'NBM_PR': [' National Blend Grid over Puerto Rico - (1.25 km)', '339', '225', '1.25', '1.25', 'km'],
+'NBM_PR': ['National Blend Grid over Puerto Rico - (1.25 km)', '339', '225', '1.25', '1.25', 'km'],
 'gridHFR-US_WEST_LOSANGELES_1KM': ['High Frequency Radar (US_WEST_LOSANGELES_1KM) total vector velocity (TVV) Lon/Lat Resolution ', '1399', '278', '0.010407', '0.008987', 'degree'],
 '175': ['Grid over Guam (10 km longitude/latitude grid)', '556', '334', '0.09', '0.09', 'degree'],
 'gridHFR-US_WEST_SANFRAN_1KM': ['High Frequency Radar (US_WEST_SANFRAN_1KM) total vector velocity (TVV) Lon/Lat Resolution ', '1399', '167', '0.010407', '0.008987', 'degree'],
@@ -2005,24 +2144,24 @@ navigation = {'216': ['grid over Alaska (polar stereographic)', '139', '107', '4
 '180': ['CONUS - Latitude/Longitude grid (for AFWA product)', '200', '200', '0.226131', '0.226131', 'degree'],
 '181': ['Central America/Caribbean - Latitude/Longitude grid (for AFWA product)', '200', '143', '0.22593', '0.226549', 'degree'],
 '186': ['12 km PSG limited domain Alaska grid (used by DGEX)', '377', '237', '11.945', '11.945', 'km'],
-'187': [' extended conus nest 2.5 km', '2145', '1597', '2.539703', '2.539703', 'km'],
-'NBM': [' National Blend Grid over CONUS - (2.54 km)', '2145', '1597', '2.539703', '2.539703', 'km'],
+'187': ['extended conus nest 2.5 km', '2145', '1597', '2.539703', '2.539703', 'km'],
+'NBM': ['National Blend Grid over CONUS - (2.54 km)', '2145', '1597', '2.539703', '2.539703', 'km'],
 '185': ['12 km LCC limited domain CONUS grid (used by DGEX)', '491', '303', '12.0', '12.0', 'km'],
 'gridHFR-EAST_6KM': ['High Frequency Radar (EAST_6KM) total vector velocity (TVV) Lon/Lat Resolution ', '701', '460', '0.058075', '0.05394', 'degree'],
 '361091001': ['Northern Hemisphere (longitude/latitude grid)-Add one column', '361', '91', '1.0', '1.0', 'degree'],
-'360180001': [' SWPC SXI C ', '360', '180', '1', '1', 'degree'],
+'360180001': ['SWPC SXI C ', '360', '180', '1', '1', 'degree'],
 '128141': ['(128x141) COAMPS Southern California Equidistant Cylindrical', '128', '141', '0.150000', '0.150000', 'degree'],
 '1023': ['NDFD AK', '1649', '1105', '2.97656', '2.97656', 'km'],
-'184': [' Grid over CONUS - (2.54 km)', '2145', '1377', '2.539703', '2.539703', 'km'],
+'184': ['Grid over CONUS - (2.54 km)', '2145', '1377', '2.539703', '2.539703', 'km'],
 '39': ['Quasi-regular grid Northern Hemisphere Longitude range 150E - 240E ', '73', '73', '1.25', '1.25', 'degree'],
 'gridHFR-US_EAST_SOUTH_2KM': ['High Frequency Radar (US_EAST_SOUTH_2KM) total vector velocity (TVV) Lon/Lat Resolution ', '2103', '223', '0.019356', '0.01798', 'degree'],
 '98': ['Global Gaussian Lon/Lat T254 Resolution ', '192', '94', '1.875', '0', 'degree'],
 '163': ['Regional - CONUS 5 km grid', '1008', '722', '5.0', '5.0', 'km'],
 'RAP200': ['16 km Puerto Rico grid (AWIPS grid 200)', '108', '94', '16.232', '16.232', 'km'],
 '229': ['Global (longitude/latitude grid)', '360', '181', '1.0', '1.0', 'degree'],
-'228': [' Global (longitude/latitude grid)', '144', '73', '2.5', '2.5', 'degree'],
-'227': [' grid over the contiguous United States - 16X Resolution (5 km) (Used by the Radar Stage IV precipitation analyses and Satellite-derived Precipitation Estimates and SMOKES grids) (Lambert Conformal)', '1473', '1025', '5.079', '5.079', 'km'],
-'226': ['grid over the contiguous United States - 8X Resolution (10 km) (Used by the Radar mosaics) (Lambert Conformal)', '737', '513', '10.1588125', '10.1588125', 'km'],
+'228': ['Global (longitude/latitude grid)', '144', '73', '2.5', '2.5', 'degree'],
+'227': ['Grid over thecontiguous United States - 16X Resolution (5 km) (Used by the Radar Stage IV precipitation analyses and Satellite-derived Precipitation Estimates and SMOKES grids) (Lambert Conformal)', '1473', '1025', '5.079', '5.079', 'km'],
+'226': ['Grid over the contiguous United States - 8X Resolution (10 km) (Used by the Radar mosaics) (Lambert Conformal)', '737', '513', '10.1588125', '10.1588125', 'km'],
 '225': ['National Double Resolution - Hawaii (Mercator)', '185', '135', '80.0', '80.0', 'km'],
 'gridHFR-WEST_6KM': ['High Frequency Radar (WEST_6KM) total vector velocity (TVV) Lon/Lat Resolution ', '234', '367', '0.06247', '0.05394', 'degree'],
 '721181001': ['Northern Hemisphere (longitude/latitude grid)-Add one column', '721', '181', '0.5', '0.5', 'degree'],
@@ -2037,7 +2176,7 @@ navigation = {'216': ['grid over Alaska (polar stereographic)', '139', '107', '4
 '14': ['0.167 degree Latitude/Longitude grid (for the Easter Pacific; includes Hawaii and extends to the Pacific islands of Guam etc.)', '511', '301', '0.166667', '0.166667', 'degree'],
 '255004': ['HIRES - 5 km Puerto Rico', '340', '208', '0.045', '0.045', 'degree'],
 '16': ['0.133 x 0.067 degree Latitude/Longitude grid for Alaska ', '548', '391', '0.133333', '0.066667', 'degree'],
-'NBM_OC': [' National Blend Grid over Oceanic - (10 km)', '2517', '1817', '10.0', '10.0', 'km'],
+'NBM_OC': ['National Blend Grid over Oceanic - (10 km)', '2517', '1817', '10.0', '10.0', 'km'],
 '18': ['0.067 degree Latitude/Longitude grid for the US East Coast', '586', '481', '0.066667', '0.066667', 'degree'],
 '301186': ['(301x186) COAMPS Europe Equidistant Cylindrical', '301', '186', '0.200000002980232', '0.200000002980232', 'degree'],
 '240152': ['HRAP Grid for STR (Colorado Basin RFC Salt Lake City, Utah)', '260', '360', '4.7625', '4.7625', 'km'],
@@ -2064,9 +2203,9 @@ navigation = {'216': ['grid over Alaska (polar stereographic)', '139', '107', '4
 '721361002': ['Global (longitude/latitude grid) - Add one column', '721', '361', '0.5', '0.5', 'degree'],
 '37': ['Quasi-regular grid Northern Hemisphere Longitude range 330E - 60E ', '73', '73', '1.25', '1.25', 'degree'],
 '271151': ['(271x151) COAMPS Northeast Pacific Equidistant Cylindrical', '271', '151', '0.20000', '0.20000', 'degree'],
-'9090001': [' SWPC DRAP20 C ', '90', '90', '4', '2', 'degree'],
+'9090001': ['SWPC DRAP20 C ', '90', '90', '4', '2', 'degree'],
 '108162002': ['UKMet HiRes tile - Northern Hemisphere Longitude range 71.25E - 160.416E ', '108', '162', '0.833', '0.556', 'degree'],
-'3636001': [' SWPC SOLAR FLUX C ', '36', '36', '10', '5', 'degree'],
+'3636001': ['SWPC SOLAR FLUX C ', '36', '36', '10', '5', 'degree'],
 '362181001': ['Global (longitude/latitude grid) - Add one column', '362', '181', '1.0', '1.0', 'degree'],
 '238': ['Western North Atlantic (longitude/latitude grid)', '275', '203', '0.25', '0.25', 'degree'],
 '602151001': ['90902-point (602x151) Lon/Lat grid', '601', '151', '0.6', '0.6', 'degree'],
@@ -2102,7 +2241,7 @@ navigation = {'216': ['grid over Alaska (polar stereographic)', '139', '107', '4
 '201': ['Northern Hemispheric (polar stereographic)', '65', '65', '381.0', '381.0', 'km'],
 '147': ['Air-Quality Forecasting Eastern 3x Domain', '268', '259', '12.0', '12.0', 'km'],
 '203': ['National - Alaska (polar stereographic)', '45', '39', '190.5', '190.5', 'km'],
-'18090001': [' SWPC XRAY C ', '180', '90', '2', '2', 'degree'],
+'18090001': ['SWPC XRAY C ', '180', '90', '2', '2', 'degree'],
 '205': ['National - Puerto Rico (polar stereographic)', '45', '39', '190.5', '190.5', 'km'],
 '363181002': ['Global (longitude/latitude grid) - Add one column', '363', '181', '1.0', '1.0', 'degree'],
 '864162002': ['UKMet HiRes combined - Southern Hemisphere Longitude range 71.25E - 70.416E ', '864', '162', '0.833', '0.556', 'degree'],
@@ -2112,10 +2251,10 @@ navigation = {'216': ['grid over Alaska (polar stereographic)', '139', '107', '4
 '9112': ['nwpsCG1', '261', '201', '0.019731', '0.018', 'degree'],
 '360181001': ['360 by 181 ENSEMBLE-MET', '360', '181', '1.0', '1.0', 'degree'],
 '148': ['Air-Quality Forecasting CONUS 5x Domain', '442', '265', '12.0', '12.0', 'km'],
-'22829': [' Global (longitude/latitude grid)', '144', '29', '2.5', '2.5', 'degree'],
-'9050001': [' SWPC Ovation C ', '90', '50', '4', '1', 'degree'],
+'22829': ['Global (longitude/latitude grid)', '144', '29', '2.5', '2.5', 'degree'],
+'9050001': ['SWPC Ovation C ', '90', '50', '4', '1', 'degree'],
 '38': ['Quasi-regular grid Northern Hemisphere Longitude range 60E - 150E ', '73', '73', '1.25', '1.25', 'degree'],
-'18060001': [' SWPC Enlil C ', '180', '60', '2', '2', 'degree'],
+'18060001': ['SWPC Enlil C ', '180', '60', '2', '2', 'degree'],
 '29': ['5365-point (145x37) N. Hemisphere longitude/latitude grid', '145', '37', '2.5', '2.5', 'degree'],
 '721311001': ['223920-point (720x311) global Lon/Lat grid - add one column', '721', '311', '0.5', '0.5', 'degree'],
 '255001': ['HIRES - 5 km Eastern US', '884', '614', '5.0', '5.0', 'km'],
@@ -2125,7 +2264,16 @@ navigation = {'216': ['grid over Alaska (polar stereographic)', '139', '107', '4
 '234': ['Regional (longitude/latitude grid)', '131', '121', '0.25', '0.25', 'degree'],
 '2881144001': ['Global High Resolution Sea Ice grid (longitude/latitude grid)-Add one column', '2881', '1440', '0.125', '0.125', 'degree'],
 '108162007': ['UKMet HiRes tile - Southern Hemisphere Longitude range 161.25E - 250.416E ', '108', '162', '0.833', '0.556', 'degree'],
-'2090001': [' SWPC Conductivity C ', '20', '90', '18', '2', 'degree'],
+'2090001': ['SWPC Conductivity C ', '20', '90', '18', '2', 'degree'],
 'ARI': ['Average Recurrence Interval Grids (1-1000yr FFG)', '7000', '3500', '0.01', '0.01', 'degree'],
-'145073001': [' Global (longitude/latitude grid)-Add one column', '145', '73', '2.5', '2.5', 'degree'],
+'145073001': ['Global (longitude/latitude grid)-Add one column', '145', '73', '2.5', '2.5', 'degree'],
 'gridHFR-US_HAWAII_6KM': ['High Frequency Radar (US_WEST_HAWAII_6KM) total vector velocity (TVV) Lon/Lat Resolution ', '201', '161', '0.055801', '0.054239', 'degree']}
+
+
+
+
+
+
+
+
+
