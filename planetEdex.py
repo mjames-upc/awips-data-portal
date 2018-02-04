@@ -1,6 +1,7 @@
 import sys, os, cStringIO
 import json
 import datetime
+import psycopg2
 import cherrypy
 from awips.dataaccess import DataAccessLayer
 import matplotlib.tri as mtri
@@ -612,6 +613,26 @@ request.setParameters("""" + prod + """")</pre>
             if not available_grids:
                 available_grids = gridnames
 
+            mapJs = """<script type="text/javascript">
+                        var createGeoJSON = function(){
+                            getGeoJSONBounds('/polygons',function(response) {
+                                var coveragePolygon = response.json;
+                                var container = document.getElementById('datamap');
+                                var jsonMap = dataMap.map({
+                                    el: container,
+                                    scrollWheelZoom: false,
+                                    center: {lat: 40, lng: -105}
+                                }).init();
+                                for (var i = 0; i < coveragePolygon.length; i++) {
+                                    var poly = JSON.parse(coveragePolygon[i]["st_asgeojson"]);
+				    console.log(poly)
+				    var polygon = [geoJsonPolygonFeature(poly)];
+                                    jsonMap.drawPolygon(polygon);
+				}
+                            });
+                    }
+                </script>"""
+            renderMap = """<div class="ui segment" id="datamap"></div>"""
             productList += """
                 <h2 class="ui header">
                   <img src="/images/grid.png" class="ui circular image">
@@ -648,7 +669,7 @@ request.setParameters("""" + prod + """")</pre>
 
             productList += """</table></div>"""
 
-            renderHtml = "<title>AWIPS Data Portal - "+ title +"</title>" + productList
+            renderHtml = "<title>AWIPS Data Portal - "+ title +"</title>" + mapJs + renderMap + productList
 
             stringReturn = createpage(id,'','','',renderHtml,'','')
             return stringReturn
@@ -664,6 +685,7 @@ request.setParameters("""" + prod + """")</pre>
         import matplotlib.pyplot as plt
         from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
         import numpy as np
+	plt.switch_backend('agg')
 
         request.setLocationNames(name)
 
@@ -884,17 +906,12 @@ request.setLevels(levels[0])</pre>
         mapJs = ''
         if parm:
             mapJs = """
-
-                                getGeoJSON('/api?name="""+ name + """&parm="""+parm+"""&level="""+str(level)+"""',function(response) {
-                                    var json = response.json;
-                                    var container = document.getElementById('dsmap');
-                                    var maps = mapConfig(colormaps, container);
-                                    maps.jsonMap.drawImage(json, response.json.metadata);
-                                });
                                 getGeoJSONBounds('/polygon?name="""+ name + """',function(response) {
                                     var coveragePolygon = response.json;
                                     var container = document.getElementById('datamap');
                                     var polygon =  [geoJsonPolygonFeature(coveragePolygon)] ;
+				    console.log(coveragePolygon);
+			            console.log(polygon);
                                     var jsonMap = dataMap.map({
                                         el: container,
                                         scrollWheelZoom: false,
@@ -1144,11 +1161,19 @@ request.setLevels(levels[0])</pre>
         return coverage
 
 
-
-
-
-
-
+    @cherrypy.expose
+    def polygons(self):
+        import psycopg2
+        request = DataAccessLayer.newDataRequest()
+        request.setDatatype("grid")
+        available_grids = DataAccessLayer.getAvailableLocationNames(request)
+        if not available_grids:
+            available_grids = ["NCWF","HRRR","GFS","NAM12","CMC","MRMS_0500","MRMS_1000"]
+        my_query = query_db("SELECT ST_AsGeoJSON(the_geom)::text from gridcoverage where id in "
+                        "(select distinct location_id from grid_info where datasetid in ('NCWF','HRRR','NAM12','MRMS_1000'));")
+	json_output = json.dumps(my_query)
+        dataset = list(json_output)
+        return dataset
 
     @cherrypy.expose
     def polygon(self, name="RAP13"):
@@ -1731,6 +1756,19 @@ def product_count_label(count=0):
         return " <div class='ui label mini'>" + str(count) + " products</div>"
     else:
         return " <div class='ui label mini'>" + str(count) + " product</div>"
+
+
+def db():
+    return psycopg2.connect("dbname = 'metadata' user = 'awips' host = 'localhost' password='awips'")
+
+def query_db(query, args=(), one=False):
+    cur = db().cursor()
+    cur.execute(query, args)
+    r = [dict((cur.description[i][0], value) \
+               for i, value in enumerate(row)) for row in cur.fetchall()]
+    cur.connection.close()
+    return (r[0] if r else None) if one else r
+
 
 
 
