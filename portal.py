@@ -73,13 +73,14 @@ class Edex:
 
 
     @cherrypy.expose
-    def radar(self, id="klch", product="32"):
+    def radar(self, id="kdox", product="32"):
         from cartopy.feature import ShapelyFeature,NaturalEarthFeature
         from awips import ThriftClient, RadarCommon
         from dynamicserialize.dstypes.com.raytheon.uf.common.time import TimeRange
         from dynamicserialize.dstypes.com.raytheon.uf.common.dataplugin.radar.request import GetRadarDataRecordRequest
         from datetime import datetime
         import matplotlib.pyplot as plt
+	plt.switch_backend('agg')
         from datetime import timedelta
         from numpy import ma
         from metpy.plots import ctables
@@ -124,40 +125,6 @@ class Edex:
             gl.ylabel_style = {'size': 6}
             return fig, ax
 
-        nexrad = {
-            "N0Q": {
-                'id': 94,
-                'unit': 'dBZ',
-                'name': '0.5 deg Base Reflectivity',
-                'ctable': ['NWSStormClearReflectivity', -20., 0.5],
-                'scale': [-32.0, 94.5],
-                'res': 1000.,
-                'elev': '0.5'},
-            "DHR": {
-                'id': 32,
-                'unit': 'dBZ',
-                'name': '0.5 deg Digital Hybrid Reflectivity',
-                'ctable': ['NWSStormClearReflectivity', -20., 0.5],
-                'scale': [-32.0, 94.5],
-                'res': 1000.,
-                'elev': '0.5'},
-            "N0U": {
-                'id': 99,
-                'unit': 'kts',
-                'name': '0.5 deg Base Velocity',
-                'ctable': ['NWS8bitVel', -100., 1.],
-                'scale': [-100, 100],
-                'res': 250.,
-                'elev': '0.5'},
-            "EET": {
-                'id': 135,
-                'unit': 'kft',
-                'name': 'Enhanced Echo Tops',
-                'ctable': ['NWSEnhancedEchoTops', 2, 1],
-                'scale': [0, 255],
-                'res': 1000.,
-                'elev': '0.0'}
-        }
         nexrad_info = [kv for kv in nexrad.items() if kv[1]['id'] == int(product)][0]
         code = nexrad_info[0]
         bbox = [lons.min(), lons.max(), lats.min(), lats.max()]
@@ -208,6 +175,8 @@ class Edex:
         prodSelect = '<select class="ui select dropdown" id="prod-select">'
         for prod in availableProds:
             if RepresentsInt(prod):
+                nexrad_info = [kv for kv in nexrad.items() if kv[1]['id'] == prod][0]
+                code = nexrad_info[0]
                 idhash = hash(id + prod)
                 prodSelect += '<option value="%s">%s</option>' % (prod, prod)
                 prodActiveClass = ''
@@ -216,8 +185,8 @@ class Edex:
 
                 prodMenu += '<a class="item %s" href="/radar?id=%s&parm=%s"><div class="small ui blue label">%s</div></a>' % (prodActiveClass, id, prod,prod)
                 prodString += '<tr><td><a href="/radar?id='+id+'&product='+ prod +'"><b>' + prod + '</b></a></td>' \
-                    '<td><div class="small ui label"></div></td>' \
-                    '<td><div class="small ui label"></div></td>' \
+                    '<td>'+nexrad[code]['name']+'</td>' \
+                    '<td><div class="small ui label">'+nexrad[code]['unit']+'</div></td>' \
                     '<td><a class="showcode circular ui icon basic button" name="'+str(idhash)+'" ' \
                                 'href="/json_radar?id=' + id + '&product=' + prod + '">' \
                                  '<i class="code icon small"></i></a></td></tr>'
@@ -225,8 +194,8 @@ class Edex:
                 prodString += """<tr id=""" + str(idhash) + """ class="transition hidden"><td colspan=5><div class="ui instructive bottom attached segment">
     <pre class="code xml">request = DataAccessLayer.newDataRequest()
 request.setDatatype("radar")
-request.setLocationNames("""" + id + """")
-request.setParameters("""" + prod + """")</pre>
+request.setLocationNames(\"""" + id + """\")
+request.setParameters(\"""" + prod + """\")</pre>
     </div></td></tr>"""
 
         prodSelect += '</select>'

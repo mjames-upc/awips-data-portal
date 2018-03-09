@@ -396,7 +396,6 @@ var dataMap = (function() {
             return this;
         }
         function zoomToBounds(polygon) {
-            console.log("zoomToBounds");
             console.log(polygon);
             var geojson = L.geoJson(polygon);
             map.fitBounds(geojson.getBounds());
