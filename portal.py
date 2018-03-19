@@ -73,9 +73,10 @@ class Edex:
 
 
     @cherrypy.expose
-    def radar(self, id="kdox", product="32"):
+    def radar(self, id="krtx", product="32"):
         from cartopy.feature import ShapelyFeature,NaturalEarthFeature
         from awips import ThriftClient, RadarCommon
+        from awips.tables import nexrad
         from dynamicserialize.dstypes.com.raytheon.uf.common.time import TimeRange
         from dynamicserialize.dstypes.com.raytheon.uf.common.dataplugin.radar.request import GetRadarDataRecordRequest
         from datetime import datetime
@@ -102,6 +103,8 @@ class Edex:
         availableLevels.sort()
         request.setLevels(availableLevels[0])
 
+        entry = nexrad[product]
+
         times = DataAccessLayer.getAvailableTimes(request)
 
         print(str(len(times)) + " scans available")
@@ -125,22 +128,20 @@ class Edex:
             gl.ylabel_style = {'size': 6}
             return fig, ax
 
-        nexrad_info = [kv for kv in nexrad.items() if kv[1]['id'] == int(product)][0]
-        code = nexrad_info[0]
-        bbox = [lons.min(), lons.max(), lats.min(), lats.max()]
-        print(nexrad_info)
-        print(code)
+        #nexrad_info = [kv for kv in nexrad.items() if kv[1]['id'] == int(product)][0]
+        nexrad_info = nexrad[product]
 
+        bbox = [lons.min(), lons.max(), lats.min(), lats.max()]
         data = ma.masked_invalid(data)
 
-        ctable = nexrad[code]['ctable'][0]
-        beg = nexrad[code]['ctable'][1]
-        inc = nexrad[code]['ctable'][2]
+        ctable = entry['ctable'][0]
+        beg = entry['ctable'][1]
+        inc = entry['ctable'][2]
         norm, cmap = ctables.registry.get_with_steps(ctable, beg, inc)
 
         fig, ax = make_map(bbox=bbox)
-        cs = ax.pcolormesh(lons, lats, data, norm=norm, cmap=cmap, vmin=nexrad[code]['scale'][0],
-                           vmax=nexrad[code]['scale'][1])
+        cs = ax.pcolormesh(lons, lats, data, norm=norm, cmap=cmap, vmin=entry['scale'][0],
+                           vmax=entry['scale'][1])
         cbar = fig.colorbar(cs, extend='both', shrink=0.85, orientation='horizontal')
         cbar.set_label(str(id).upper() + " " \
                        + str(grid.getLevel()) + " " \
@@ -175,8 +176,7 @@ class Edex:
         prodSelect = '<select class="ui select dropdown" id="prod-select">'
         for prod in availableProds:
             if RepresentsInt(prod):
-                nexrad_info = [kv for kv in nexrad.items() if kv[1]['id'] == prod][0]
-                code = nexrad_info[0]
+                entry = nexrad[prod]
                 idhash = hash(id + prod)
                 prodSelect += '<option value="%s">%s</option>' % (prod, prod)
                 prodActiveClass = ''
@@ -185,8 +185,8 @@ class Edex:
 
                 prodMenu += '<a class="item %s" href="/radar?id=%s&parm=%s"><div class="small ui blue label">%s</div></a>' % (prodActiveClass, id, prod,prod)
                 prodString += '<tr><td><a href="/radar?id='+id+'&product='+ prod +'"><b>' + prod + '</b></a></td>' \
-                    '<td>'+nexrad[code]['name']+'</td>' \
-                    '<td><div class="small ui label">'+nexrad[code]['unit']+'</div></td>' \
+                    '<td>' + entry['name'] + ' (' + entry['mnemo'] + ')</td>' \
+                    '<td><div class="small ui label">'+entry['unit']+'</div></td>' \
                     '<td><a class="showcode circular ui icon basic button" name="'+str(idhash)+'" ' \
                                 'href="/json_radar?id=' + id + '&product=' + prod + '">' \
                                  '<i class="code icon small"></i></a></td></tr>'
@@ -356,30 +356,31 @@ request.setParameters(\"""" + prod + """\")</pre>
         wsrProducts = DataAccessLayer.getAvailableParameters(request)
         wsrProducts.sort()
 
-        request.setParameters('94')
+        for prod in wsrProducts:
+            request.setParameters(prod)
 
-        datatimes = DataAccessLayer.getAvailableTimes(request)
+            datatimes = DataAccessLayer.getAvailableTimes(request)
 
-        if not datatimes:
-            productList += product_status('red', str(site).upper(), 'None')
-        else:
-            dateString = str(datatimes[-1])
-            utc_str = str(datetime.utcfromtimestamp(int(datatimes[-1].getRefTime().getTime()/1000)))
-            ddiff = datetime.utcnow() - datetime.strptime(dateString, '%Y-%m-%d %H:%M:%S')
-            hours = ddiff.seconds / 3600
-            days = ddiff.days
-            minute = str((ddiff.seconds - (3600 * hours)) / 60)
-            hrdiff = ''
-            if hours > 0:
-                hrdiff += str(hours) + "hr "
-            hrdiff += str(minute) + "m ago"
-            if days > 1:
-                hrdiff = str(days) + " days ago"
-            color='green'
-            if hours > 1:
-                color='orange'
-            product_string = str(site).upper() + product_count_label(len(wsrProducts))
-            productList += product_status(color, product_string, str(hrdiff), utc_str)
+            if not datatimes:
+                productList += product_status('red', str(site).upper() + " " + str(prod).upper(), 'None')
+            else:
+                dateString = str(datatimes[-1])
+                utc_str = str(datetime.utcfromtimestamp(int(datatimes[-1].getRefTime().getTime()/1000)))
+                ddiff = datetime.utcnow() - datetime.strptime(dateString, '%Y-%m-%d %H:%M:%S')
+                hours = ddiff.seconds / 3600
+                days = ddiff.days
+                minute = str((ddiff.seconds - (3600 * hours)) / 60)
+                hrdiff = ''
+                if hours > 0:
+                    hrdiff += str(hours) + "hr "
+                hrdiff += str(minute) + "m ago"
+                if days > 1:
+                    hrdiff = str(days) + " days ago"
+                color='green'
+                if hours > 1:
+                    color='orange'
+                product_string = str(site).upper() + " " + str(prod).upper()
+                productList += product_status(color, product_string, str(hrdiff), utc_str)
 
         sect = "NEXRCOMP"
         request = DataAccessLayer.newDataRequest()
@@ -433,7 +434,7 @@ request.setParameters(\"""" + prod + """\")</pre>
 
         availableSectors = DataAccessLayer.getAvailableLocationNames(request)
         availableSectors.sort()
-        availableSectors.remove('NEXRCOMP')
+        if 'NEXRCOMP' in availableSectors: availableSectors.remove('NEXRCOMP')
 
         for sect in availableSectors:
             request = DataAccessLayer.newDataRequest()
@@ -635,7 +636,6 @@ request.setParameters(\"""" + prod + """\")</pre>
                         if not days > 1:
                             productList += product_card('grid', str(grid), str(hrdiff), utc_str)
 
-
             productList += """</table></div>"""
 
             renderHtml = "<title>AWIPS Data Portal - "+ title +"</title>" + mapJs + renderMap + productList
@@ -643,18 +643,13 @@ request.setParameters(\"""" + prod + """\")</pre>
             stringReturn = createpage(id,'','','',renderHtml,'','')
             return stringReturn
 
-
-
-
-
-
-
+        # IF GRID NAME GIVEN
 
         import cartopy.crs as ccrs
         import matplotlib.pyplot as plt
         from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
         import numpy as np
-	plt.switch_backend('agg')
+        plt.switch_backend('agg')
 
         request.setLocationNames(name)
 
@@ -803,7 +798,6 @@ request.setLevels(levels[0])</pre>
         if not parm: parmSelect = ''
         if not level: levelSelect = ''
 
-
         # Forecast Cycles
         cycles = DataAccessLayer.getAvailableTimes(request, True)
         times = DataAccessLayer.getAvailableTimes(request)
@@ -843,8 +837,6 @@ request.setLevels(levels[0])</pre>
             print("Content-Type: image/%s\n" % format)
             sys.stdout.write(sio.getvalue())
             cartopyImage = '<img style="border: 0;" src="data:image/png;base64,'+sio.getvalue().encode("base64").strip()+'"/>'
-
-
 
         # Last Run
         dateString = str(latest_run[0:1][0])[0:19]
@@ -890,13 +882,13 @@ request.setLevels(levels[0])</pre>
             renderMap = """
                         <div>
                             <div class="ui top attached tabular menu">
-                              <a class="item active" data-tab="leaflet">Leaflet</a>
-                              <a class="item" data-tab="cartopy">Cartopy</a>
+                              <!--<a class="item active" data-tab="leaflet">Leaflet</a>-->
+                              <a class="item active" data-tab="cartopy">Cartopy</a>
                             </div>
-                            <div class="ui bottom attached active tab segment" data-tab="leaflet">
+                            <div class="ui bottom attached tab segment" data-tab="leaflet">
                                 <div class="ui segment" id="dsmap"></div>
                             </div>
-                            <div class="ui bottom attached tab segment" data-tab="cartopy">
+                            <div class="ui bottom attached active tab segment" data-tab="cartopy">
                                 <div class="ui segment" id="pymap">"""+ cartopyImage +"""</div>
                             </div>
                         </div>"""
@@ -915,9 +907,7 @@ request.setLevels(levels[0])</pre>
 
                 """+ parmBlock + renderMap + parmTable
 
-
         sideContent = """
-
                 <div class="ui raised segment small">
                     <a class="ui top right attached label">Grid Info</a>
 
@@ -955,16 +945,13 @@ request.setLevels(levels[0])</pre>
                         </div>
                     </div>
                 </div>
-		<div class="ui segment" id="datamap"></div>
-            """
+		<div class="ui segment" id="datamap"></div>"""
 
         stringReturn = createpage(name,parm,str(level),str(latest_run[0]),renderHtml,sideContent, parmMenu)
         return stringReturn
 
-
-
     ##
-    ## DERIVED PARAMETERS ALL GRIDS
+    ## GRID PARAMETERS WITHOUT DESCRIPTIONS (DERIVED PARMS)
     ##
 
     @cherrypy.expose
@@ -1010,9 +997,6 @@ request.setLevels(levels[0])</pre>
                 <h1>"""+ title + """</h1>"""+ parmTable
         stringReturn = createpage('','','','',renderHtml,'','')
         return stringReturn
-
-
-
 
     @cherrypy.expose
     def remapped(self, name="", parm="", level=""):
@@ -1060,8 +1044,6 @@ request.setLevels(levels[0])</pre>
         return json.dumps(jsdict)
 
 
-
-
     @cherrypy.expose
     def api(self, name="", parm="", level=""):
         request = DataAccessLayer.newDataRequest()
@@ -1102,12 +1084,6 @@ request.setLevels(levels[0])</pre>
         return json.dumps(datadict)
 
 
-
-
-
-
-
-
     @cherrypy.expose
     def coverage(self, name="RAP13"):
         import psycopg2
@@ -1143,6 +1119,7 @@ request.setLevels(levels[0])</pre>
 	json_output = json.dumps(my_query)
         dataset = list(json_output)
         return dataset
+
 
     @cherrypy.expose
     def polygon(self, name="RAP13"):
@@ -1754,7 +1731,6 @@ def RepresentsInt(s):
 if __name__ == '__main__':
 
     server="edex-cloud.unidata.ucar.edu"
-    #server="149.165.157.49"
 
     env = Environment(loader=FileSystemLoader('templates'))
 

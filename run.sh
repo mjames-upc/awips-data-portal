@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+# This script is designed for deployment on CentOS/RHEL Linux servers but will
+# run on any operating system and architecture supporting Conda Python environments
+#
 # 1. install miniconda2
 #    (this is managed with environment.yml for continuous integration)
 # 
@@ -18,7 +22,7 @@
 # 3. add miniconda to path
 PATH="/home/awips/miniconda2/bin:$PATH"
 
-conda env create -f environment.yml
+#conda env create -f environment.yml
 
 source activate awips-data-portal
 python portal.py
